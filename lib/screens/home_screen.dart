@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'translator_screen.dart';
 import 'audio_translator_screen.dart';
 import 'education_screen.dart'; // <-- NEW SCREEN
+import 'group_captioning_screen.dart'; // <-- GROUP CAPTIONING SCREEN
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -47,10 +48,7 @@ class HomeScreen extends StatelessWidget {
               const Text(
                 "Welcome to ASL Translator",
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
               ),
 
               const SizedBox(height: 10),
@@ -69,9 +67,7 @@ class HomeScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const TranslatorScreen(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const TranslatorScreen()),
                   );
                 },
                 icon: const Icon(Icons.pan_tool_alt),
@@ -105,9 +101,7 @@ class HomeScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const EducationScreen(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const EducationScreen()),
                   );
                 },
                 icon: const Icon(Icons.school),
@@ -115,6 +109,26 @@ class HomeScreen extends StatelessWidget {
                   minimumSize: const Size(double.infinity, 50),
                 ),
                 label: const Text("Learn About ASL & Hearing Disabilities"),
+              ),
+
+              const SizedBox(height: 16),
+
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const GroupCaptioningScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.group),
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 50),
+                  backgroundColor: const Color.fromARGB(255, 33, 97, 140),
+                  foregroundColor: Colors.white,
+                ),
+                label: const Text("Group Captioning"),
               ),
 
               const SizedBox(height: 20),
