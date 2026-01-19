@@ -318,22 +318,6 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 122, 217, 168),
-      appBar: AppBar(
-        title: const Text("Group Captioning"),
-        actions: [
-          IconButton(
-            icon: Icon(
-              _autoScroll ? Icons.auto_awesome : Icons.auto_awesome_motion,
-            ),
-            onPressed: () {
-              setState(() {
-                _autoScroll = !_autoScroll;
-              });
-            },
-            tooltip: _autoScroll ? 'Auto-scroll On' : 'Auto-scroll Off',
-          ),
-        ],
-      ),
       body: Column(
         children: [
           // Error Display
