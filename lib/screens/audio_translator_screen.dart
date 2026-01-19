@@ -29,9 +29,7 @@ class _AudioTranslatorScreenState extends State<AudioTranslatorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 122, 217, 168),
-      appBar: AppBar(
-        title: const Text("Audio to Text"),
-      ),
+      appBar: AppBar(title: const Text("Audio to Text")),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Center(
@@ -53,10 +51,7 @@ class _AudioTranslatorScreenState extends State<AudioTranslatorScreen> {
               children: [
                 const Text(
                   "Speech Input",
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
 
                 const SizedBox(height: 20),
@@ -69,8 +64,9 @@ class _AudioTranslatorScreenState extends State<AudioTranslatorScreen> {
                     height: isListening ? 160 : 140,
                     width: isListening ? 160 : 140,
                     decoration: BoxDecoration(
-                      color:
-                          isListening ? const Color.fromARGB(255, 9, 173, 31) : Colors.blueGrey[200],
+                      color: isListening
+                          ? const Color.fromARGB(255, 9, 173, 31)
+                          : Colors.blueGrey[200],
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
@@ -82,11 +78,7 @@ class _AudioTranslatorScreenState extends State<AudioTranslatorScreen> {
                         ),
                       ],
                     ),
-                    child: Icon(
-                      Icons.mic,
-                      size: 70,
-                      color: Colors.white,
-                    ),
+                    child: Icon(Icons.mic, size: 70, color: Colors.white),
                   ),
                 ),
 
@@ -98,7 +90,9 @@ class _AudioTranslatorScreenState extends State<AudioTranslatorScreen> {
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 50),
                   ),
-                  child: Text(isListening ? "Stop Listening" : "Start Listening"),
+                  child: Text(
+                    isListening ? "Stop Listening" : "Start Listening",
+                  ),
                 ),
 
                 const SizedBox(height: 20),
