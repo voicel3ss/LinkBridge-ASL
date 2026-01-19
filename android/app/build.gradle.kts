@@ -42,3 +42,8 @@ android {
 flutter {
     source = "../.."
 }
+ 
+ dependencies {
+    implementation 'com.google.mediapipe:solution-core:0.10.0'
+implementation 'com.google.mediapipe:hands:0.10.0'
+ }
