@@ -56,9 +56,9 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
   // Phase 2: WebSocket Connection
   WebSocketChannel? _webSocketChannel;
   static const String _wsUrl =
-      'ws://10.0.2.2:5000/speech/ws'; // Update with your backend URL
+      'https://aslappserver.onrender.com/speech/ws'; // Update with your backend URL
   static const String _finalizeUrl =
-      'http://10.0.2.2:5000/speech/finalize'; // Update with your backend URL
+      'https://aslappserver.onrender.com/speech/finalize'; // Update with your backend URL
 
   // Phase 5: Caption State Management
   final List<Caption> _captions = [];

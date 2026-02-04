@@ -4,7 +4,7 @@ import '../screens/group_captioning_screen.dart';
 
 class CaptionReviewService {
   static const String _baseUrl =
-      'http://10.0.2.2:5000'; // Update with your backend URL
+      'https://aslappserver.onrender.com'; // Update with your backend URL
 
   // Save captions to backend
   static Future<bool> saveCaptions(
