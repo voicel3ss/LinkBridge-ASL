@@ -19,3 +19,9 @@ The third component of LinkBridge is an American Sign Language (ASL) to text and
 ## Conclusion
 
 Overall, LinkBridge is a versatile tool that addresses the fundamental aspects of human communication. Whether it is reading a sign, following a family dinner conversation, or connecting ASL with the hearing world, LinkBridge is there to facilitate communication. By prioritizing communication and accessibility, LinkBridge makes it easier for everyone to stay connected and engaged with the world around them.
+
+## Android Studio Setup
+If Android Studio shows incorrect project structure:
+1. File → Close Project
+2. Delete .idea folder from project root
+3. File → Open → Select project root (not android folder)

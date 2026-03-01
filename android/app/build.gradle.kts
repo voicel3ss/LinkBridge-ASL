@@ -42,6 +42,15 @@ android {
     }
 }
 
+dependencies {
+    implementation(platform("com.google.firebase:firebase-bom:34.10.0"))
+    implementation("androidx.concurrent:concurrent-futures:1.3.0")
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("androidx.concurrent:concurrent-futures-ktx:1.3.0")
+}
+
 flutter {
     source = "../.."
 }

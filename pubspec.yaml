@@ -47,7 +47,6 @@ dependencies:
 
 
 dependency_overrides:
-  camera_android_camerax: ^0.6.26+2
   characters: ^1.4.1
   matcher: ^0.12.18
   material_color_utilities: ^0.13.0

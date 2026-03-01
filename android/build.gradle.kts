@@ -1,3 +1,6 @@
+plugins {
+}
+
 allprojects {
     repositories {
         google()
@@ -15,8 +18,17 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
+
 subprojects {
     project.evaluationDependsOn(":app")
+}
+
+subprojects {
+    configurations.all {
+        resolutionStrategy {
+            force("androidx.concurrent:concurrent-futures:1.2.0")
+        }
+    }
 }
 
 tasks.register<Delete>("clean") {
