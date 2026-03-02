@@ -146,10 +146,6 @@ How To Use:
 3. Recognition text appears on screen
 4. Tap "Clear" to reset
 
-Developer Note:
-Recognition logic is currently a placeholder.
-Camera streaming and processing hooks exist, but ML integration is not implemented yet.
-
 ------------------------------------------------------------
 
 AUDIO TAB (Group Captioning)
@@ -190,11 +186,6 @@ https://aslappserver.onrender.com/speech/conversations
 
 Get captions:
 https://aslappserver.onrender.com/speech/captions/<conversationId>
-
-If hosting your own backend:
-Update URLs in:
-- lib/screens/group_captioning_screen.dart
-- lib/services/caption_review_service.dart
 
 ------------------------------------------------------------
 
