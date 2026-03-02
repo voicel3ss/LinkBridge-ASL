@@ -16,6 +16,30 @@ class _LoginScreenState extends State<LoginScreen> {
   bool isLoading = false;
   bool hidePassword = true;
 
+  void _showHelp() {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('How to use Login'),
+          content: const Text(
+            '1. Enter the email you used when creating your account.\n'
+            '2. Type your password.\n'
+            '3. Tap “Login” to sign in.\n\n'
+            'If you do not have an account yet, tap “Create an Account” '
+            'to go to the sign up screen.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Got it'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     emailController.dispose();
@@ -75,6 +99,18 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 122, 217, 168),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            color: Colors.white,
+            tooltip: 'How this screen works',
+            onPressed: _showHelp,
+          ),
+        ],
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),

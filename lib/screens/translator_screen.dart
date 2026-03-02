@@ -14,6 +14,30 @@ class _TranslatorScreenState extends State<TranslatorScreen> {
   bool isCameraReady = false;
   String recognizedSign = "No sign detected";
 
+  void _showHelp() {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('How to use Camera Translator'),
+          content: const Text(
+            '1. Make sure your camera is connected and allowed.\n'
+            '2. Position your hand so your ASL sign is clearly visible in the preview.\n'
+            '3. Hold one sign steady at a time; the recognized sign text will appear on the right.\n'
+            '4. Use the “Clear” button to reset the recognized text.\n\n'
+            'If you see a camera error, check permissions or try a different camera device.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Got it'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -75,7 +99,16 @@ class _TranslatorScreenState extends State<TranslatorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 122, 217, 168),
-      appBar: AppBar(title: const Text("ASL Camera Translator")),
+      appBar: AppBar(
+        title: const Text("ASL Camera Translator"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            tooltip: 'How this screen works',
+            onPressed: _showHelp,
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
