@@ -1,27 +1,265 @@
-# ASL Translator App — LW TSA Software Development Project 2026
+# LinkBridge (ASL + Accessibility App)
 
-## LinkBridge
+LinkBridge is a Flutter application designed to improve accessibility and communication. It provides:
 
-LinkBridge is a Flutter application designed to assist people who struggle with deaf or blind disabilities by addressing the challenges faced face in daily interactions. Through combining three distinct modes of communication into one system, the tool is able to help users easily work with their disabilities and connect more deeply with the people around them. The goal is to provide flexibility in everyday life and to help everyone be a part of the conversation. By focusing on communication needs, LinkBridge serves as a reliable tool that makes daily activities more accessible and efficient.
+- Secure login and sign-up (Firebase Authentication)
+- Camera-based ASL translator screen (camera preview with recognition placeholder logic)
+- Group captioning with live speech-to-text via WebSocket backend
+- Educational resources about ASL and accessibility
+- Caption history review
 
-## Text-to-Audio Scanning
+------------------------------------------------------------
 
-One key feature of LinkBridge is a camera-based system for text-to-audio scanning. This feature recognizes text on physical objects like menus, street signs, and information boards. Once the camera identifies the text, the device reads it aloud to the user. This is especially useful for people with visual impairments, since Braille is not universally available. The text-to-audio feature turns formerly blurred words into audio, enabling users to be independent in reading their surroundings at any time without needing another person’s assistance.
+TECH STACK
 
-## Automatic Captioning
+- Flutter (Dart SDK ^3.10.1)
+- Firebase
+  - firebase_core
+  - firebase_auth
+- Device Capabilities
+  - camera
+  - record (microphone)
+  - permission_handler
+- Networking
+  - http
+  - web_socket_channel
+- External Links
+  - url_launcher
 
-Additionally, LinkBridge features automatic captioning to help users follow group conversations. This feature was inspired by a team member’s grandfather, who said he struggled to keep track of family discussions because he could not tell who was speaking. Even with hearing aids, following several voices at once in a crowded environment was a challenge. LinkBridge solves this by captioning each speaker and identifying them clearly for the user. This feature removes the guesswork and ensures that individuals with hearing loss can remain active participants in the conversation.
+------------------------------------------------------------
 
-## ASL to Text and Speech Bridge
+GETTING STARTED
 
-The third component of LinkBridge is an American Sign Language (ASL) to text and speech bridge. This feature uses computer vision to track hand movements and translate them into text or audio, depending on the user’s preference. This feature was created to facilitate communication between signers and non-signers, including those who are visually impaired. By converting signs into speech, LinkBridge allows an ASL user to communicate directly with someone who may not understand ASL, bridging the communication gap between these communities.
+1) Prerequisites
 
-## Conclusion
+Install:
+- Flutter SDK (compatible with Dart ^3.10.1)
+- Android Studio (for Android)
+- Xcode (for iOS on macOS)
+- A physical device recommended for camera + microphone testing
 
-Overall, LinkBridge is a versatile tool that addresses the fundamental aspects of human communication. Whether it is reading a sign, following a family dinner conversation, or connecting ASL with the hearing world, LinkBridge is there to facilitate communication. By prioritizing communication and accessibility, LinkBridge makes it easier for everyone to stay connected and engaged with the world around them.
+Verify setup:
 
-## Android Studio Setup
-If Android Studio shows incorrect project structure:
-1. File → Close Project
-2. Delete .idea folder from project root
-3. File → Open → Select project root (not android folder)
+    flutter doctor
+
+------------------------------------------------------------
+
+2) Clone the Repository
+
+    git clone https://github.com/reyanshjajoo/LinkBridge-ASL.git
+    cd LinkBridge-ASL
+    flutter pub get
+
+------------------------------------------------------------
+
+FIREBASE SETUP (Required for Authentication)
+
+The app initializes Firebase at startup and requires a generated firebase_options.dart file.
+
+Recommended Method: FlutterFire CLI
+
+Install FlutterFire CLI:
+
+    dart pub global activate flutterfire_cli
+
+Configure Firebase:
+
+    flutterfire configure
+
+This generates:
+- lib/firebase_options.dart
+- android/app/google-services.json
+- ios/Runner/GoogleService-Info.plist (if iOS configured)
+
+Firebase Console Checklist:
+1. Go to Authentication
+2. Enable Email/Password sign-in method
+
+------------------------------------------------------------
+
+RUNNING THE APP
+
+Android:
+
+    flutter run
+
+If multiple devices:
+
+    flutter devices
+    flutter run -d <device_id>
+
+iOS (macOS only):
+
+    cd ios
+    pod install
+    cd ..
+    flutter run
+
+Web (optional, limited camera/mic support):
+
+    flutter run -d chrome
+
+------------------------------------------------------------
+
+HOW TO USE THE APP
+
+AUTHENTICATION
+
+Create Account:
+1. Tap "Create an Account"
+2. Enter email and password
+3. Tap "Sign Up"
+4. You will be redirected to Home
+
+Log In:
+1. Enter email and password
+2. Tap "Login"
+3. You will be redirected to Home
+
+Sign Out:
+1. Go to Account tab
+2. Tap "Sign Out"
+
+------------------------------------------------------------
+
+HOME SCREEN TABS
+
+After login, you will see four tabs:
+
+1. Camera
+2. Audio
+3. Learn
+4. Account
+
+------------------------------------------------------------
+
+CAMERA TAB (ASL Translator)
+
+What It Does:
+- Opens camera preview
+- Processes frames
+- Displays recognition status text
+
+How To Use:
+1. Grant camera permission
+2. Hold hand signs in view
+3. Recognition text appears on screen
+4. Tap "Clear" to reset
+
+Developer Note:
+Recognition logic is currently a placeholder.
+Camera streaming and processing hooks exist, but ML integration is not implemented yet.
+
+------------------------------------------------------------
+
+AUDIO TAB (Group Captioning)
+
+What It Does:
+- Requests microphone permission
+- Streams audio via WebSocket
+- Displays live captions
+- Saves sessions to caption history
+
+How To Use:
+1. Grant microphone permission
+2. Tap "Start Captioning"
+3. Speak normally
+4. Live captions appear
+5. End session to finalize and save
+6. View saved sessions in caption history
+
+------------------------------------------------------------
+
+BACKEND REQUIREMENT (IMPORTANT)
+
+Group captioning requires a backend server.
+
+Current endpoints:
+
+WebSocket:
+https://aslappserver.onrender.com/speech/ws
+
+Finalize:
+https://aslappserver.onrender.com/speech/finalize
+
+Save captions:
+https://aslappserver.onrender.com/speech/save
+
+List conversations:
+https://aslappserver.onrender.com/speech/conversations
+
+Get captions:
+https://aslappserver.onrender.com/speech/captions/<conversationId>
+
+If hosting your own backend:
+Update URLs in:
+- lib/screens/group_captioning_screen.dart
+- lib/services/caption_review_service.dart
+
+------------------------------------------------------------
+
+LEARN TAB
+
+- Displays ASL and accessibility educational content
+- External links open in browser
+- Scroll and explore resources
+
+------------------------------------------------------------
+
+ACCOUNT TAB
+
+- Shows logged-in user email
+- Allows sign out
+
+------------------------------------------------------------
+
+PERMISSIONS
+
+Required:
+- Camera (Camera tab)
+- Microphone (Audio tab)
+
+If features are not working:
+- Verify OS-level permissions
+- Ensure no other app is using camera
+- Test on a real device
+
+------------------------------------------------------------
+
+PROJECT STRUCTURE
+
+lib/
+ ├── main.dart
+ ├── screens/
+ │    ├── login_screen.dart
+ │    ├── register_screen.dart
+ │    ├── home_screen.dart
+ │    ├── translator_screen.dart
+ │    ├── group_captioning_screen.dart
+ │    ├── education_screen.dart
+ │    └── caption_review_screen.dart
+ └── services/
+      └── caption_review_service.dart
+
+------------------------------------------------------------
+
+TROUBLESHOOTING
+
+Firebase Initialization Errors:
+- Run flutterfire configure again
+- Confirm firebase_options.dart exists
+- Enable Email/Password in Firebase Console
+
+Camera Not Working:
+- Use a physical device
+- Check permissions
+- Restart app
+
+No Captions Appearing:
+- Confirm microphone permission
+- Ensure backend is reachable
+- Verify endpoint URLs
+
+------------------------------------------------------------
+
+Built with accessibility and inclusion in mind.
