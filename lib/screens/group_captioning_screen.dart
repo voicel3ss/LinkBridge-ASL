@@ -71,6 +71,30 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
   bool _isConnecting = false;
   bool _isEndingSession = false;
 
+  void _showHelpOverlay() {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('How to use Group Captioning'),
+          content: const Text(
+            '1. Make sure your microphone is allowed.\n'
+            '2. Tap “Start Captioning” to connect and begin streaming audio.\n'
+            '3. As people speak, live captions will appear in the list below.\n'
+            '4. Use “End” to stop the session and finalize it.\n'
+            '5. Tap the history button (clock icon) in the bottom-right to view past sessions.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Got it'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -438,6 +462,16 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 122, 217, 168),
+      appBar: AppBar(
+        title: const Text('Group Captioning'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            tooltip: 'How this screen works',
+            onPressed: _showHelpOverlay,
+          ),
+        ],
+      ),
       body: Column(
         children: [
           // Error Display

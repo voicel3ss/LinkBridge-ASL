@@ -16,6 +16,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool isLoading = false;
   bool hidePassword = true;
 
+  void _showHelp() {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('How to use Sign Up'),
+          content: const Text(
+            '1. Enter a valid email address you can access.\n'
+            '2. Choose a secure password.\n'
+            '3. Tap “Sign Up” to create your account.\n\n'
+            'After your account is created, you will be taken directly to the home screen. '
+            'If something goes wrong, an error message will appear under the fields.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Got it'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     emailController.dispose();
@@ -75,6 +99,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 122, 217, 168),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            color: Colors.white,
+            tooltip: 'How this screen works',
+            onPressed: _showHelp,
+          ),
+        ],
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
