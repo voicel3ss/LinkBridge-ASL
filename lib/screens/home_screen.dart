@@ -1,5 +1,6 @@
 import 'package:asl_app/screens/group_captioning_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'translator_screen.dart';
@@ -12,13 +13,55 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   int _index = 0;
+
+  late AnimationController _navController;
+  late List<Animation<double>> _navAnimations;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _navController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    // Create staggered animations for nav items
+    _navAnimations = List.generate(4, (index) {
+      return Tween<double>(
+        begin: 0.0,
+        end: 1.0,
+      ).animate(CurvedAnimation(
+        parent: _navController,
+        curve: Interval(
+          index * 0.1,
+          0.6 + index * 0.1,
+          curve: Curves.elasticOut,
+        ),
+      ));
+    });
+
+    _navController.forward();
+  }
+
+  @override
+  void dispose() {
+    _navController.dispose();
+    super.dispose();
+  }
 
   Future<void> _signOut() async {
     await FirebaseAuth.instance.signOut();
     if (!mounted) return;
     Navigator.pushReplacementNamed(context, "/login");
+  }
+
+  void _onNavTap(int index) {
+    setState(() => _index = index);
+    // Add haptic feedback or subtle animation here
+    HapticFeedback.lightImpact();
   }
 
   @override
@@ -78,30 +121,49 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
 
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _index,
-        onTap: (i) => setState(() => _index = i),
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF3C3C3C),
-        unselectedItemColor: Colors.black54,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.pan_tool_alt_outlined),
-            label: "Camera",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.mic_none_outlined),
-            label: "Audio",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.school_outlined),
-            label: "Learn",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: "Account",
-          ),
-        ],
+      bottomNavigationBar: AnimatedBuilder(
+        animation: _navController,
+        builder: (context, child) {
+          return BottomNavigationBar(
+            currentIndex: _index,
+            onTap: _onNavTap,
+            type: BottomNavigationBarType.fixed,
+            selectedItemColor: const Color(0xFF3C3C3C),
+            unselectedItemColor: Colors.black54,
+            backgroundColor: const Color(0xFFF7EFDD),
+            elevation: 8,
+            items: [
+              BottomNavigationBarItem(
+                icon: ScaleTransition(
+                  scale: _navAnimations[0],
+                  child: const Icon(Icons.pan_tool_alt_outlined),
+                ),
+                label: "Camera",
+              ),
+              BottomNavigationBarItem(
+                icon: ScaleTransition(
+                  scale: _navAnimations[1],
+                  child: const Icon(Icons.mic_none_outlined),
+                ),
+                label: "Audio",
+              ),
+              BottomNavigationBarItem(
+                icon: ScaleTransition(
+                  scale: _navAnimations[2],
+                  child: const Icon(Icons.school_outlined),
+                ),
+                label: "Learn",
+              ),
+              BottomNavigationBarItem(
+                icon: ScaleTransition(
+                  scale: _navAnimations[3],
+                  child: const Icon(Icons.person_outline),
+                ),
+                label: "Account",
+              ),
+            ],
+          );
+        },
       ),
     );
   }
