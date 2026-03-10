@@ -13,6 +13,7 @@ class _TranslatorScreenState extends State<TranslatorScreen> {
   CameraController? cameraController;
   bool isCameraReady = false;
   String recognizedSign = "No sign detected";
+  bool _isDisposed = false;
 
   void _showHelp() {
     showDialog(
@@ -46,18 +47,32 @@ class _TranslatorScreenState extends State<TranslatorScreen> {
 
   Future<void> initCamera() async {
     try {
+      if (cameraController != null) {
+        try {
+          if (cameraController!.value.isStreamingImages) {
+            await cameraController!.stopImageStream();
+          }
+          await cameraController!.dispose();
+        } catch (_) {}
+        cameraController = null;
+      }
+
       // Get all available cameras
       final cameras = await availableCameras();
 
       if (cameras.isEmpty) {
-        setState(() {
-          recognizedSign = "No camera found";
-        });
+        if (mounted) {
+          setState(() {
+            recognizedSign = "No camera found";
+          });
+        }
         return;
       }
 
-      // Use the back camera (preferred)
-      final camera = cameras.first;
+      final camera = cameras.firstWhere(
+        (c) => c.lensDirection == CameraLensDirection.back,
+        orElse: () => cameras.first,
+      );
 
       cameraController = CameraController(
         camera,
@@ -67,6 +82,8 @@ class _TranslatorScreenState extends State<TranslatorScreen> {
 
       await cameraController!.initialize();
 
+      if (!mounted || _isDisposed) return;
+
       setState(() {
         isCameraReady = true;
       });
@@ -74,15 +91,20 @@ class _TranslatorScreenState extends State<TranslatorScreen> {
       // Start frame stream for ASL detection
       cameraController!.startImageStream(processCameraImage);
     } catch (e) {
-      setState(() {
-        recognizedSign = "Camera error: $e";
-      });
+      if (mounted) {
+        setState(() {
+          isCameraReady = false;
+          recognizedSign = "Camera error: $e";
+        });
+      }
     }
   }
 
   // TODO: Actual ML goes here.
   // For now: simulate detection text
   Future<void> processCameraImage(CameraImage image) async {
+    if (!mounted || _isDisposed) return;
+
     // Fake detection for demo:
     setState(() {
       recognizedSign = "Detecting... (ML model not added yet)";
@@ -91,7 +113,17 @@ class _TranslatorScreenState extends State<TranslatorScreen> {
 
   @override
   void dispose() {
-    cameraController?.dispose();
+    _isDisposed = true;
+    final controller = cameraController;
+    cameraController = null;
+
+    if (controller != null) {
+      if (controller.value.isStreamingImages) {
+        unawaited(controller.stopImageStream());
+      }
+      unawaited(controller.dispose());
+    }
+
     super.dispose();
   }
 
