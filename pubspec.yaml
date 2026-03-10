@@ -44,6 +44,7 @@ dependencies:
   record: ^6.1.2
   web_socket_channel: ^3.0.3
   http: ^1.6.0
+  confetti: ^0.7.0
 
 
 dependency_overrides:

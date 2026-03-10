@@ -4,6 +4,45 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+class ConfettiParticle {
+  late double x;
+  late double y;
+  late double velocity;
+  late Color color;
+  late double size;
+  late double rotation;
+  late double rotationSpeed;
+  late BoxShape shape;
+
+  ConfettiParticle() {
+    final random = Random();
+    x = random.nextDouble() * 600 - 300; // -300 to 300 (full screen width spread)
+    y = -50 - random.nextDouble() * 100; // Start above screen
+    velocity = 1 + random.nextDouble() * 2; // 1-3 pixels per frame (slower)
+    color = [
+      const Color(0xFFFFDAB9), // Peach
+      const Color(0xFFC67C4E), // Brown
+      const Color(0xFF81C784), // Green
+      const Color(0xFFE57373), // Coral
+      const Color(0xFFFFF3E0), // Light cream
+    ][random.nextInt(5)];
+    size = 3 + random.nextDouble() * 6; // 3-9 pixels (larger)
+    rotation = random.nextDouble() * 2 * pi;
+    rotationSpeed = (random.nextDouble() - 0.5) * 0.15; // Slower rotation
+    shape = random.nextBool() ? BoxShape.circle : BoxShape.rectangle; // Mix of circles and squares
+  }
+
+  void update() {
+    y += velocity;
+    rotation += rotationSpeed;
+  }
+
+  bool isOffScreen(double screenHeight) {
+    return y > screenHeight + 100; // Give extra buffer to ensure complete disappearance
+  }
+}
+// import 'package:confetti/confetti.dart';
+
 class EducationScreen extends StatefulWidget {
   const EducationScreen({super.key});
 
@@ -243,6 +282,8 @@ class _TriviaWidgetState extends State<TriviaWidget> with TickerProviderStateMix
   late AnimationController _pulseController;
   late AnimationController _resultController;
   late Animation<double> _resultScaleAnimation;
+  late AnimationController _confettiController;
+  final List<ConfettiParticle> _particles = [];
 
   @override
   void initState() {
@@ -264,12 +305,26 @@ class _TriviaWidgetState extends State<TriviaWidget> with TickerProviderStateMix
       parent: _resultController,
       curve: Curves.elasticOut,
     ));
+
+    _confettiController = AnimationController(
+      duration: const Duration(seconds: 9),  // Much longer for complete fall and disappearance
+      vsync: this,
+    )..addListener(() {
+      setState(() {
+        for (final particle in _particles) {
+          particle.update();
+        }
+        // Remove particles that are completely off screen
+        _particles.removeWhere((particle) => particle.isOffScreen(MediaQuery.of(context).size.height));
+      });
+    });
   }
 
   @override
   void dispose() {
     _pulseController.dispose();
     _resultController.dispose();
+    _confettiController.dispose();
     super.dispose();
   }
 
@@ -334,6 +389,11 @@ class _TriviaWidgetState extends State<TriviaWidget> with TickerProviderStateMix
             _resultController.reset();
           } else {
             _showResult = true;
+            // Create more natural confetti particles
+            for (int i = 0; i < 50; i++) {
+              _particles.add(ConfettiParticle());
+            }
+            _confettiController.forward(from: 0);
           }
         });
       }
@@ -355,75 +415,102 @@ class _TriviaWidgetState extends State<TriviaWidget> with TickerProviderStateMix
   Widget build(BuildContext context) {
     if (_showResult) {
       final percent = ((_score / _questions.length) * 100).toInt();
-      return ScaleTransition(
-        scale: Tween<double>(begin: 0.8, end: 1.0).animate(
-          CurvedAnimation(parent: _resultController, curve: Curves.elasticOut),
-        ),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                blurRadius: 20,
-                color: const Color(0xFFC67C4E).withValues(alpha: 0.4),
-                offset: const Offset(0, 10),
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: Column(
-            children: [
-              const Text(
-                "🎉 Quiz finished! 🎉",
-                style: TextStyle(
-                  color: EducationScreen.cardGreen,
-                  fontSize: 20,
-                fontWeight: FontWeight.w800,
-              ),
+      return Stack(
+        children: [
+          // Main result content
+          ScaleTransition(
+            scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+              CurvedAnimation(parent: _resultController, curve: Curves.elasticOut),
             ),
-            const SizedBox(height: 8),
-            ScaleTransition(
-              scale: Tween<double>(begin: 0.5, end: 1.0).animate(
-                CurvedAnimation(parent: _resultController, curve: Curves.elasticOut),
-              ),
-              child: Text(
-                "$percent%",
-                style: const TextStyle(
-                  color: Color(0xFFC67C4E),
-                  fontSize: 64,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
-            ScaleTransition(
-              scale: Tween<double>(begin: 0.7, end: 1.0).animate(
-                CurvedAnimation(parent: _resultController, curve: Curves.elasticOut),
-              ),
-              child: ElevatedButton(
-                onPressed: _restart,
-                style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(double.infinity, 54),
-                  backgroundColor: EducationScreen.cardGreen,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    blurRadius: 20,
+                    color: const Color(0xFFC67C4E).withOpacity(0.4),
+                    offset: const Offset(0, 10),
+                    spreadRadius: 2,
                   ),
-                  elevation: 8,
-                ),
-                child: const Text("Restart quiz", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                ],
+              ),
+              child: Column(
+                children: [
+                  const Text(
+                    "🎉 Quiz finished! 🎉",
+                    style: TextStyle(
+                      color: EducationScreen.cardGreen,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ScaleTransition(
+                    scale: Tween<double>(begin: 0.5, end: 1.0).animate(
+                      CurvedAnimation(parent: _resultController, curve: Curves.elasticOut),
+                    ),
+                    child: Text(
+                      "$percent%",
+                      style: const TextStyle(
+                        color: Color(0xFFC67C4E),
+                        fontSize: 64,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  ScaleTransition(
+                    scale: Tween<double>(begin: 0.7, end: 1.0).animate(
+                      CurvedAnimation(parent: _resultController, curve: Curves.elasticOut),
+                    ),
+                    child: ElevatedButton(
+                      onPressed: _restart,
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: const Size(double.infinity, 54),
+                        backgroundColor: EducationScreen.cardGreen,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 8,
+                      ),
+                      child: const Text("Restart quiz", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-        ),
+          ),
+          // Natural confetti overlay - spans full result box width
+          ..._particles.map((particle) {
+            // Center confetti on screen center (result box is centered)
+            final screenWidth = MediaQuery.of(context).size.width;
+            final centerX = screenWidth / 2;
+            
+            return Positioned(
+              left: centerX + particle.x,
+              top: particle.y,
+              child: Transform.rotate(
+                angle: particle.rotation,
+                child: Container(
+                  width: particle.size,
+                  height: particle.size,
+                  decoration: BoxDecoration(
+                    color: particle.color,
+                    shape: particle.shape,
+                    borderRadius: particle.shape == BoxShape.rectangle 
+                      ? BorderRadius.circular(2) : null,
+                  ),
+                ),
+              ),
+            );
+          }),
+        ],
       );
-    }
-
-    return Container(
+    }    return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -540,12 +627,12 @@ class _TriviaOptionAnimatedState extends State<_TriviaOptionAnimated>
   void initState() {
     super.initState();
     _tapController = AnimationController(
-      duration: const Duration(milliseconds: 150),
+      duration: const Duration(milliseconds: 200),  // Slightly longer for more fluid feel
       vsync: this,
     );
 
-    _tapScale = Tween<double>(begin: 1.0, end: 0.95).animate(
-      CurvedAnimation(parent: _tapController, curve: Curves.easeOut),
+    _tapScale = Tween<double>(begin: 1.0, end: 0.92).animate(  // More pronounced scale
+      CurvedAnimation(parent: _tapController, curve: Curves.easeInOutCubic),  // More organic curve
     );
   }
 
