@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import 'translator_screen.dart';
 import 'education_screen.dart';
+import 'text_reader_page.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,6 +22,25 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.pushReplacementNamed(context, "/login");
   }
 
+  Widget _buildCurrentPage(User? user) {
+    switch (_index) {
+      case 0:
+        return const TranslatorScreen();
+      case 1:
+        return const GroupCaptioningScreen();
+      case 2:
+        return const EducationScreen();
+      case 3:
+        return const TextReaderPage();
+      case 4:
+      default:
+        return _AccountPage(
+          email: user?.email,
+          onSignOut: _signOut,
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -30,53 +50,38 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // One scaffold for the whole app shell
       appBar: AppBar(
-  backgroundColor: Colors.white,
-  elevation: 1, // subtle separation from green background
-  centerTitle: true,
-  title: Text(
-    _index == 0
-        ? "Camera"
-        : _index == 1
-            ? "Audio"
-            : _index == 2
-                ? "Learn"
-                : "Account",
-    style: const TextStyle(
-      color: Color.fromARGB(255, 20, 35, 28),
-      fontWeight: FontWeight.w700,
-    ),
-  ),
-  actions: [
-    if (_index == 3)
-      IconButton(
-        icon: const Icon(
-          Icons.logout,
-          color: Color.fromARGB(255, 20, 35, 28),
+        backgroundColor: Colors.white,
+        elevation: 1,
+        centerTitle: true,
+        title: Text(
+          _index == 0
+              ? "ASL"
+              : _index == 1
+                  ? "Audio"
+                  : _index == 2
+                      ? "Learn"
+                      : _index == 3
+                          ? "Reader"
+                          : "Account",
+          style: const TextStyle(
+            color: Color.fromARGB(255, 20, 35, 28),
+            fontWeight: FontWeight.w700,
+          ),
         ),
-        onPressed: _signOut,
-      ),
-  ],
-),
-
-
-      body: SafeArea(
-        child: IndexedStack(
-          index: _index,
-          children: [
-            // These screens should ideally NOT create their own Scaffold/AppBar.
-            // If they currently do, scroll down to the note below.
-            const TranslatorScreen(),
-            const GroupCaptioningScreen(),
-            const EducationScreen(),
-
-            // Account tab (simple, no card)
-            _AccountPage(
-              email: user?.email,
-              onSignOut: _signOut,
+        actions: [
+          if (_index == 4)
+            IconButton(
+              icon: const Icon(
+                Icons.logout,
+                color: Color.fromARGB(255, 20, 35, 28),
+              ),
+              onPressed: _signOut,
             ),
-          ],
-        ),
+        ],
       ),
+
+
+      body: SafeArea(child: _buildCurrentPage(user)),
 
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _index,
@@ -87,7 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.pan_tool_alt_outlined),
-            label: "Camera",
+            label: "ASL",
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.mic_none_outlined),
@@ -96,6 +101,10 @@ class _HomeScreenState extends State<HomeScreen> {
           BottomNavigationBarItem(
             icon: Icon(Icons.school_outlined),
             label: "Learn",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.text_fields),
+            label: "Reader",
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
