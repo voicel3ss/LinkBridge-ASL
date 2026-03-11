@@ -12,30 +12,47 @@ class ASLCameraScreen extends StatefulWidget {
 }
 
 class _ASLCameraScreenState extends State<ASLCameraScreen> {
-
   final GestureClassifier classifier = GestureClassifier();
 
-  String prediction = "Show a sign";
+  String prediction = "Loading model...";
+  bool isModelReady = false;
 
   bool isProcessing = false;
 
   @override
   void initState() {
     super.initState();
-    classifier.loadModel();
+    _initModel();
+  }
+
+  Future<void> _initModel() async {
+    try {
+      await classifier.loadModel();
+      if (!mounted) return;
+      setState(() {
+        isModelReady = true;
+        prediction = "Show a sign";
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        prediction = "Model load failed";
+      });
+    }
   }
 
   Future<void> processFrame(CameraImage image) async {
-
-    if (isProcessing) return;
+    if (!isModelReady || isProcessing) return;
 
     isProcessing = true;
 
-    String result = await classifier.predict(image);
+    final result = await classifier.predict(image);
 
-    setState(() {
-      prediction = result;
-    });
+    if (mounted) {
+      setState(() {
+        prediction = result.isEmpty ? prediction : result;
+      });
+    }
 
     isProcessing = false;
   }
@@ -47,7 +64,6 @@ class _ASLCameraScreenState extends State<ASLCameraScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: AppBar(
         title: const Text("ASL Translator"),
@@ -56,7 +72,6 @@ class _ASLCameraScreenState extends State<ASLCameraScreen> {
 
       body: Stack(
         children: [
-
           CameraView(onFrame: processFrame),
 
           Positioned(
