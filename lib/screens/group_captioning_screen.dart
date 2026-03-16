@@ -7,6 +7,9 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:http/http.dart' as http;
 import 'caption_review_screen.dart';
+import 'speaker_setup_screen.dart';
+import '../models/speaker_profile.dart';
+import '../services/speaker_label_mapper.dart';
 
 class Caption {
   final String text;
@@ -41,7 +44,21 @@ class Caption {
 }
 
 class GroupCaptioningScreen extends StatefulWidget {
-  const GroupCaptioningScreen({super.key});
+  /// Optional: pre-identified speakers from identification flow.
+  final List<SpeakerProfile>? speakers;
+
+  /// Optional: conversation ID from identification flow.
+  final String? conversationId;
+
+  /// Optional: live WebSocket channel handed off from identification screen.
+  final WebSocketChannel? channel;
+
+  const GroupCaptioningScreen({
+    super.key,
+    this.speakers,
+    this.conversationId,
+    this.channel,
+  });
 
   @override
   State<GroupCaptioningScreen> createState() => _GroupCaptioningScreenState();
@@ -56,15 +73,21 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
   // Phase 2: WebSocket Connection
   WebSocketChannel? _webSocketChannel;
   static const String _wsUrl =
-      'wss://aslappserver.onrender.com/speech/ws'; // Update with your backend URL
+      'wss://aslappserver.onrender.com/speech/ws';
   static const String _finalizeUrl =
-      'https://aslappserver.onrender.com/speech/finalize'; // Update with your backend URL
+      'https://aslappserver.onrender.com/speech/finalize';
 
   // Phase 5: Caption State Management
   final List<Caption> _captions = [];
   final ScrollController _scrollController = ScrollController();
   bool _autoScroll = true;
   String _conversationId = '';
+
+  // Speaker label mapping
+  final SpeakerLabelMapper _labelMapper = SpeakerLabelMapper();
+
+  /// Whether this screen was launched with a pre-connected channel.
+  bool get _hasPreconnectedChannel => widget.channel != null;
 
   // Phase 9: Error Handling
   String? _errorMessage;
@@ -99,7 +122,33 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
   void initState() {
     super.initState();
     _requestMicrophonePermission();
-    _generateConversationId();
+
+    // Register speaker labels from identification phase
+    if (widget.speakers != null) {
+      for (final p in widget.speakers!) {
+        if (p.speakerLabel != null) {
+          _labelMapper.registerLabel(p.speakerLabel!, p.name);
+        }
+      }
+    }
+
+    if (_hasPreconnectedChannel) {
+      // Channel handed off from identification screen — use it directly
+      _webSocketChannel = widget.channel;
+      _conversationId = widget.conversationId ?? '';
+
+      _webSocketChannel!.stream.listen(
+        _handleWebSocketMessage,
+        onError: _handleWebSocketError,
+        onDone: _handleWebSocketDone,
+      );
+
+      // Auto-start recording since the session is already active
+      _startAudioCapture();
+    } else {
+      // Standalone mode — generate ID, user taps Start to connect
+      _generateConversationId();
+    }
   }
 
   @override
@@ -207,9 +256,11 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
       final data = json.decode(message);
 
       if (data['event'] == 'final_transcript') {
+        final rawSpeaker = data['speaker'] ?? 'Unknown';
+        final displayName = _labelMapper.resolve(rawSpeaker);
         final caption = Caption(
           text: data['text'] ?? '',
-          speaker: data['speaker'] ?? 'Unknown',
+          speaker: displayName,
           receivedAt: DateTime.now(),
         );
 
@@ -364,6 +415,7 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
         body: json.encode({
           'conversation_id': _conversationId,
           'captions': _captions.map((c) => c.toJson()).toList(),
+          'speaker_map': _labelMapper.registry,
         }),
       ).timeout(const Duration(seconds: 10));
 
@@ -500,6 +552,35 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
                     onPressed: () => setState(() => _errorMessage = null),
                   ),
                 ],
+              ),
+            ),
+
+          // Named Speakers shortcut (only in standalone/tab mode)
+          if (!_hasPreconnectedChannel && !_isRecording && !_isConnecting)
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SpeakerSetupScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.people),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 46),
+                    foregroundColor: const Color(0xFFC67C4E),
+                    side: const BorderSide(color: Color(0xFFC67C4E)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  label: const Text('New Session with Named Speakers'),
+                ),
               ),
             ),
 
