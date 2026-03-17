@@ -69,32 +69,44 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFDAB9),
+      backgroundColor: const Color(0xFFD7BE82),  // Warm gold background
 
       // One scaffold for the whole app shell
       appBar: AppBar(
-  backgroundColor: const Color(0xFFF7EFDD),
-  elevation: 1, // subtle separation from green background
+  backgroundColor: const Color(0xFF515A47),  // Sage green for header
+  elevation: 2,
   centerTitle: true,
   title: Text(
     _index == 0
-        ? "Camera"
+        ? "ASL Camera Translator"
         : _index == 1
-            ? "Audio"
+            ? "Live Captions"
             : _index == 2
                 ? "Learn"
                 : "Account",
     style: const TextStyle(
-      color: Color(0xFF3C3C3C),
+      color: Colors.white,
       fontWeight: FontWeight.w700,
     ),
   ),
   actions: [
+    if (_index == 0)
+      IconButton(
+        icon: const Icon(Icons.help_outline, color: Colors.white),
+        tooltip: 'How this screen works',
+        onPressed: () {},
+      ),
+    if (_index == 1)
+      IconButton(
+        icon: const Icon(Icons.help_outline, color: Colors.white),
+        tooltip: 'How this screen works',
+        onPressed: () {},
+      ),
     if (_index == 3)
       IconButton(
         icon: const Icon(
           Icons.logout,
-          color: Color(0xFF3C3C3C),
+          color: Colors.white,
         ),
         onPressed: _signOut,
       ),
@@ -128,9 +140,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             currentIndex: _index,
             onTap: _onNavTap,
             type: BottomNavigationBarType.fixed,
-            selectedItemColor: const Color(0xFF3C3C3C),
+            selectedItemColor: const Color(0xFF755C1B),
             unselectedItemColor: Colors.black54,
-            backgroundColor: const Color(0xFFF7EFDD),
+            backgroundColor: const Color(0xFFD7BE82),
             elevation: 8,
             items: [
               BottomNavigationBarItem(
@@ -138,14 +150,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   scale: _navAnimations[0],
                   child: const Icon(Icons.pan_tool_alt_outlined),
                 ),
-                label: "Camera",
+                label: "ASL Camera Translator",
               ),
               BottomNavigationBarItem(
                 icon: ScaleTransition(
                   scale: _navAnimations[1],
                   child: const Icon(Icons.mic_none_outlined),
                 ),
-                label: "Audio",
+                label: "Live Captions",
               ),
               BottomNavigationBarItem(
                 icon: ScaleTransition(
@@ -191,7 +203,7 @@ class _AccountPage extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: const Color(0xFF3C3C3C),
+              color: const Color(0xFF515A47),
               borderRadius: BorderRadius.circular(18),
               boxShadow: const [
                 BoxShadow(
@@ -243,8 +255,8 @@ class _AccountPage extends StatelessWidget {
             icon: const Icon(Icons.logout),
             style: ElevatedButton.styleFrom(
               minimumSize: const Size(double.infinity, 50),
-              backgroundColor: const Color(0xFFF7EFDD),
-              foregroundColor: const Color(0xFF3C3C3C),
+              backgroundColor: const Color(0xFF7A4419),
+              foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),

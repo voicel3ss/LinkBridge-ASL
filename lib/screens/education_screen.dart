@@ -20,11 +20,11 @@ class ConfettiParticle {
     y = -50 - random.nextDouble() * 100; // Start above screen
     velocity = 1 + random.nextDouble() * 2; // 1-3 pixels per frame (slower)
     color = [
-      const Color(0xFFFFDAB9), // Peach
-      const Color(0xFFC67C4E), // Brown
-      const Color(0xFF81C784), // Green
-      const Color(0xFFE57373), // Coral
-      const Color(0xFFFFF3E0), // Light cream
+      const Color(0xFFD7BE82), // Warm Gold/Tan
+      const Color(0xFF7A4419), // Rich Brown
+      const Color(0xFF515A47), // Muted Sage Green
+      const Color(0xFF400406), // Deep Maroon
+      const Color(0xFF755C1B), // Darker Brown
     ][random.nextInt(5)];
     size = 3 + random.nextDouble() * 6; // 3-9 pixels (larger)
     rotation = random.nextDouble() * 2 * pi;
@@ -46,10 +46,10 @@ class ConfettiParticle {
 class EducationScreen extends StatefulWidget {
   const EducationScreen({super.key});
 
-  // Color constants accessible from the class
-  static const Color mintGreen = Color(0xFFFFDAB9);
-  static const Color cardGreen = Color(0xFF3C3C3C);
-  static const Color deepGreen = Color(0xFF0707A);
+  // Color constants for new palette
+  static const Color mintGreen = Color(0xFF515A47);  // Primary sage green
+  static const Color cardGreen = Color(0xFF7A4419);  // Rich brown containers
+  static const Color deepGreen = Color(0xFFD7BE82);  // Warm gold accent
 
   @override
   State<EducationScreen> createState() => _EducationScreenState();
@@ -95,7 +95,7 @@ class _EducationScreenState extends State<EducationScreen> with TickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: EducationScreen.mintGreen,
+      backgroundColor: const Color(0xFFD7BE82),  // Warm gold background
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
@@ -241,7 +241,7 @@ class _SectionTitle extends StatelessWidget {
       child: Text(
         title.toUpperCase(),
         style: const TextStyle(
-          color: Color(0xFFC67C4E),
+          color: Color(0xFF7A4419),
           fontSize: 13,
           fontWeight: FontWeight.w800,
           letterSpacing: 1.2,
@@ -431,7 +431,7 @@ class _TriviaWidgetState extends State<TriviaWidget> with TickerProviderStateMix
                 boxShadow: [
                   BoxShadow(
                     blurRadius: 20,
-                    color: const Color(0xFFC67C4E).withOpacity(0.4),
+                    color: const Color(0xFF7A4419).withOpacity(0.4),
                     offset: const Offset(0, 10),
                     spreadRadius: 2,
                   ),
@@ -455,7 +455,7 @@ class _TriviaWidgetState extends State<TriviaWidget> with TickerProviderStateMix
                     child: Text(
                       "$percent%",
                       style: const TextStyle(
-                        color: Color(0xFFC67C4E),
+                        color: Color(0xFF7A4419),
                         fontSize: 64,
                         fontWeight: FontWeight.w900,
                       ),
@@ -514,14 +514,7 @@ class _TriviaWidgetState extends State<TriviaWidget> with TickerProviderStateMix
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            EducationScreen.cardGreen,
-            const Color(0xFF2C2C2C),
-          ],
-        ),
+        color: EducationScreen.cardGreen,  // Solid rich brown instead of gradient
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
@@ -532,7 +525,7 @@ class _TriviaWidgetState extends State<TriviaWidget> with TickerProviderStateMix
           ),
           BoxShadow(
             blurRadius: 10,
-            color: const Color(0xFFC67C4E).withValues(alpha: 0.3),
+            color: const Color(0xFF7A4419).withValues(alpha: 0.15),  // Subtle rich brown overlay
             offset: const Offset(0, 5),
           ),
         ],
@@ -546,7 +539,7 @@ class _TriviaWidgetState extends State<TriviaWidget> with TickerProviderStateMix
               Text(
                 "Question ${_currentIndex + 1} of ${_questions.length}",
                 style: const TextStyle(
-                  color: Color(0xFFC67C4E),
+                  color: Color(0xFF7A4419),
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
                   letterSpacing: 1.2,
@@ -555,13 +548,13 @@ class _TriviaWidgetState extends State<TriviaWidget> with TickerProviderStateMix
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFC67C4E).withValues(alpha: 0.2),
+                  color: const Color(0xFF7A4419).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   "Score: $_score/${_questions.length}",
                   style: const TextStyle(
-                    color: Color(0xFFC67C4E),
+                    color: Color(0xFF7A4419),
                     fontWeight: FontWeight.w600,
                     fontSize: 12,
                   ),
@@ -649,9 +642,9 @@ class _TriviaOptionAnimatedState extends State<_TriviaOptionAnimated>
 
   @override
   Widget build(BuildContext context) {
-    // Very gentle, aesthetic colors that blend with peach/cream theme
-    const Color gentleGreen = Color(0xFF81C784);      // Soft, muted green
-    const Color gentleRed = Color(0xFFE57373);        // Soft, muted coral
+    // Soft, aesthetic colors that blend with new palette
+    const Color gentleGreen = Color(0xFF515A47);      // Muted sage green
+    const Color gentleRed = Color(0xFF400406);        // Deep maroon
     const Color veryLightGreen = Color(0xFFF1F8F6);   // Almost white with hint of green
     const Color veryLightRed = Color(0xFFFEF5F5);     // Almost white with hint of red
 

@@ -98,7 +98,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFDAB9),
+      backgroundColor: const Color(0xFFD7BE82),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -127,7 +127,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF3C3C3C),
+                  color: const Color(0xFF515A47),  // Sage green container
                   borderRadius: BorderRadius.circular(18),
                   boxShadow: const [
                     BoxShadow(
@@ -218,9 +218,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       onPressed: isLoading ? null : handleRegister,
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 50),
-                        backgroundColor: const Color(0xFFF7EFDD),
-                        disabledBackgroundColor: const Color(0xFFEEE0C9),
-                        foregroundColor: const Color(0xFF3C3C3C),
+                        backgroundColor: const Color(0xFF7A4419),  // Rich brown button
+                        disabledBackgroundColor: const Color(0xFFB8956A),  // Muted tan
+                        foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -232,7 +232,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
                                 valueColor: const AlwaysStoppedAnimation<Color>(
-                                  Color(0xFF3C3C3C),
+                                  Color(0xFF7A4419),
                                 ),
                               ),
                             )

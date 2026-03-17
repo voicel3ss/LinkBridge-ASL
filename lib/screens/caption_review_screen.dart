@@ -55,9 +55,17 @@ class _CaptionReviewScreenState extends State<CaptionReviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFDAB9),
+      backgroundColor: const Color(0xFFD7BE82),  // Warm gold background
       appBar: AppBar(
-        title: const Text("Caption History"),
+        backgroundColor: const Color(0xFF515A47),  // Sage green header
+        elevation: 0,
+        title: _conversations.isEmpty
+            ? const Text('Start a captioning session',
+              style: TextStyle(color: Colors.white),
+            )
+            : const Text('Caption History',
+              style: TextStyle(color: Colors.white),
+            ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -202,9 +210,14 @@ class _ConversationDetailScreenState extends State<ConversationDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 122, 217, 168),
+      backgroundColor: const Color(0xFFD7BE82),  // Warm gold background
       appBar: AppBar(
-        title: Text(widget.title),
+        backgroundColor: const Color(0xFF515A47),  // Sage green header
+        elevation: 0,
+        title: Text(
+          widget.title,
+          style: const TextStyle(color: Colors.white),
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.share),

@@ -24,9 +24,9 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         textSelectionTheme: const TextSelectionThemeData(
-          cursorColor: Color(0xFF3C3C3C),
-          selectionColor: Color(0xFFFFDAB9),
-          selectionHandleColor: Color(0xFF3C3C3C),
+          cursorColor: Color(0xFF515A47),  // Sage green cursor
+          selectionColor: Color(0xFF7A4419),  // Rich brown selection
+          selectionHandleColor: Color(0xFF515A47),  // Sage green handles
         ),
       ),
 

@@ -71,29 +71,6 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
   bool _isConnecting = false;
   bool _isEndingSession = false;
 
-  void _showHelpOverlay() {
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text('How to use Group Captioning'),
-          content: const Text(
-            '1. Make sure your microphone is allowed.\n'
-            '2. Tap “Start Captioning” to connect and begin streaming audio.\n'
-            '3. As people speak, live captions will appear in the list below.\n'
-            '4. Use “End” to stop the session and finalize it.\n'
-            '5. Tap the history button (clock icon) in the bottom-right to view past sessions.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Got it'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   @override
   void initState() {
@@ -447,11 +424,11 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
 
   Color _getSpeakerColor(String speaker) {
     final colors = [
-      Color(0xFFC67C4E),
-      Color(0xFFD4845E),
-      Color(0xFFE8956E),
-      Color(0xFFB8674E),
-      Color(0xFFDDB5A0),
+      Color(0xFF7A4419),  // Rich Brown
+      Color(0xFF755C1B),  // Darker Brown
+      Color(0xFFD7BE82),  // Warm Gold/Tan
+      Color(0xFF515A47),  // Muted Sage Green
+      Color(0xFF400406),  // Deep Maroon
     ];
 
     final hash = speaker.hashCode;
@@ -461,17 +438,7 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFDAB9),
-      appBar: AppBar(
-        title: const Text('Group Captioning'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.help_outline),
-            tooltip: 'How this screen works',
-            onPressed: _showHelpOverlay,
-          ),
-        ],
-      ),
+      backgroundColor: const Color(0xFFD7BE82),  // Warm gold background
       body: Column(
         children: [
           // Error Display
@@ -522,7 +489,7 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
                         : Icon(_isRecording ? Icons.stop : Icons.play_arrow),
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 50),
-                      backgroundColor: _isRecording ? Colors.red : Color(0xFFC67C4E),
+                      backgroundColor: _isRecording ? Colors.red : Color(0xFF7A4419),  // Rich brown when inactive
                       foregroundColor: Colors.white,
                     ),
                     label: Text(
@@ -567,30 +534,6 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.closed_caption, size: 20, color: Color(0xFF3C3C3C)),
-                      const SizedBox(width: 8),
-                      const Text(
-                        "Live Captions",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF3C3C3C),
-                        ),
-                      ),
-                      const Spacer(),
-                      if (_captions.isNotEmpty)
-                        Text(
-                          "${_captions.length} messages",
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFFC67C4E),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const Divider(height: 20, color: Color(0xFFDDB5A0)),
 
                   Expanded(
                     child: _captions.isEmpty
