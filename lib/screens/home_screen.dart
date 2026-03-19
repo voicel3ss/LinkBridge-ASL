@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import 'translator_screen.dart';
 import 'education_screen.dart';
 import 'text_reader_page.dart';
 
@@ -23,7 +22,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   // Keep tab labels in one place so the app bar title and bottom nav never drift.
   static const List<String> _tabTitles = [
-    "Camera",
     "Audio",
     "Reader",
     "Learn",
@@ -43,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
 
     // Stagger each nav icon so the bar feels responsive on first load.
-    _navAnimations = List.generate(5, (index) {
+    _navAnimations = List.generate(4, (index) {
       return Tween<double>(begin: 0.0, end: 1.0).animate(
         CurvedAnimation(
           parent: _navController,
@@ -96,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
         ),
         actions: [
-          if (_index == 4)
+          if (_index == 3)
             IconButton(
               icon: const Icon(Icons.logout, color: Color(0xFF3C3C3C)),
               onPressed: _signOut,
@@ -108,7 +106,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         child: IndexedStack(
           index: _index,
           children: [
-            const TranslatorScreen(),
             const GroupCaptioningScreen(),
             const TextReaderPage(),
             const EducationScreen(),
@@ -135,20 +132,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               BottomNavigationBarItem(
                 icon: ScaleTransition(
                   scale: _navAnimations[0],
-                  child: const Icon(Icons.pan_tool_alt_outlined),
-                ),
-                label: "Camera",
-              ),
-              BottomNavigationBarItem(
-                icon: ScaleTransition(
-                  scale: _navAnimations[1],
                   child: const Icon(Icons.mic_none_outlined),
                 ),
                 label: "Audio",
               ),
               BottomNavigationBarItem(
                 icon: ScaleTransition(
-                  scale: _navAnimations[3],
+                  scale: _navAnimations[1],
                   child: const Icon(Icons.text_fields),
                 ),
                 label: "Reader",
@@ -162,7 +152,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
               BottomNavigationBarItem(
                 icon: ScaleTransition(
-                  scale: _navAnimations[4],
+                  scale: _navAnimations[3],
                   child: const Icon(Icons.person_outline),
                 ),
                 label: "Account",
@@ -175,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 }
 
-/// Lightweight account summary shown in the fifth tab.
+/// Lightweight account summary shown in the fourth tab.
 ///
 /// This widget stays intentionally read-only so sign-out remains the only
 /// account action from the home shell.

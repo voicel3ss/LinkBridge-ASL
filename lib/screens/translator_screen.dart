@@ -29,7 +29,7 @@ class _TranslatorScreenState extends State<TranslatorScreen> {
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          title: const Text('How to use Camera Translator'),
+          title: const Text('How to use Sign Translator'),
           content: const Text(
             '1. Make sure your camera is connected and allowed.\n'
             '2. Position your hand so your ASL sign is clearly visible in the preview.\n'
@@ -179,7 +179,7 @@ class _TranslatorScreenState extends State<TranslatorScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFFFDAB9),
       appBar: AppBar(
-        title: const Text("ASL Camera Translator"),
+        title: const Text("Sign Translator"),
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline),
