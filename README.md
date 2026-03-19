@@ -147,6 +147,25 @@ Endpoints currently referenced in Flutter code:
 5. `POST /speech/finalize`
 6. `POST /speech/register_speakers`
 
+## Backend Bridge and Wake-Up
+
+Group captioning uses a backend bridge by design.
+
+Why this exists:
+1. Speaker diarization/transcription capabilities were implemented in the server stack using gRPC-oriented tooling.
+2. The Flutter app communicates over WebSocket for live audio streaming.
+3. The backend acts as a protocol middle layer: app WebSocket in, diarization/transcription pipeline out.
+
+Server deployment and source:
+1. Deployment: `https://aslappserver.onrender.com`
+2. Health check: `https://aslappserver.onrender.com/health`
+3. Server repository: `https://github.com/MINTALLOYY/ASLAppServer`
+
+Cold-start behavior (Render):
+1. The backend may sleep when idle.
+2. Before demoing or testing group captioning, call the health endpoint once.
+3. Start captioning after the health check responds successfully.
+
 ## Setup
 
 ### Prerequisites
