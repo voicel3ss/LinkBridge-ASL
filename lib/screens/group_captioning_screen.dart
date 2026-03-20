@@ -1,16 +1,48 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:record/record.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:http/http.dart' as http;
 import 'caption_review_screen.dart';
 import 'speaker_setup_screen.dart';
-import '../models/chat_message.dart';
 import '../models/speaker_profile.dart';
-import '../services/conversation_service.dart';
 import '../services/speaker_label_mapper.dart';
+
+class Caption {
+  final String text;
+  final String speaker;
+  final DateTime receivedAt;
+  final String source;
+
+  Caption({
+    required this.text,
+    required this.speaker,
+    required this.receivedAt,
+    this.source = 'speech',
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'text': text,
+      'speaker': speaker,
+      'receivedAt': receivedAt.toIso8601String(),
+      'source': source,
+    };
+  }
+
+  factory Caption.fromJson(Map<String, dynamic> json) {
+    return Caption(
+      text: json['text'],
+      speaker: json['speaker'],
+      receivedAt: DateTime.parse(json['receivedAt']),
+      source: json['source'] ?? 'speech',
+    );
+  }
+}
 
 class GroupCaptioningScreen extends StatefulWidget {
   /// Optional: pre-identified speakers from identification flow.
@@ -38,6 +70,8 @@ class GroupCaptioningScreen extends StatefulWidget {
 }
 
 class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
+  static const bool _verboseCaptionLogs = true;
+
   // Phase 1: Audio Capture
   final AudioRecorder _audioRecorder = AudioRecorder();
   bool _isRecording = false;
@@ -46,14 +80,15 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
   // Phase 2: WebSocket Connection
   WebSocketChannel? _webSocketChannel;
   static const String _wsUrl = 'wss://aslappserver.onrender.com/speech/ws';
+  static const String _finalizeUrl =
+      'https://aslappserver.onrender.com/speech/finalize';
 
   // Phase 5: Caption State Management
-  final List<ChatMessage> _captions = [];
+  final List<Caption> _captions = [];
   final ScrollController _scrollController = ScrollController();
   final bool _autoScroll = true;
   String _conversationId = '';
   int? _genericSpeakerCount;
-  bool _sessionStarted = false;
 
   // Speaker label mapping
   final SpeakerLabelMapper _labelMapper = SpeakerLabelMapper();
@@ -65,6 +100,9 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
   String? _errorMessage;
   bool _isConnecting = false;
   bool _isEndingSession = false;
+  int _rxMessageCount = 0;
+  int _finalTranscriptCount = 0;
+  int _nonTranscriptEventCount = 0;
 
 
   @override
@@ -83,6 +121,8 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
       unawaited(_initializePreconnectedSession());
     } else {
       unawaited(_requestMicrophonePermission());
+      // Standalone mode — generate ID, user taps Start to connect
+      _generateConversationId();
     }
   }
 
@@ -120,10 +160,6 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
     // Channel handed off from identification screen — use it directly
     _webSocketChannel = widget.channel;
     _conversationId = widget.conversationId ?? '';
-    if (_conversationId.isNotEmpty) {
-      ConversationService.instance.setActiveConversationId(_conversationId);
-    }
-    _sessionStarted = true;
 
     // Use broadcast stream so multiple listeners don't crash
     (widget.broadcastStream ?? _webSocketChannel!.stream).listen(
@@ -136,6 +172,13 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
     await _startAudioCapture();
   }
 
+  void _generateConversationId() {
+    _conversationId = 'conv_${DateTime.now().millisecondsSinceEpoch}';
+    if (_verboseCaptionLogs) {
+      print('[Session] Generated conversation_id=$_conversationId');
+    }
+  }
+
   // Phase 2: Live Connection Setup
   Future<void> _connectWebSocket() async {
     if (_webSocketChannel != null) return;
@@ -146,18 +189,17 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
     });
 
     try {
-      if (_conversationId.isEmpty) {
-        _conversationId = await ConversationService.instance
-            .getOrCreateConversation(forceNew: true, allowLocalFallback: true);
-      }
-
       final uri = _buildWebSocketUri(_wsUrl, {
         'conversation_id': _conversationId,
-        'mode': 'captioning',
         if (_genericSpeakerCount != null)
           'num_speakers': _genericSpeakerCount.toString(),
       });
       print('[WS] Connecting to: $uri');
+      if (_verboseCaptionLogs) {
+        print(
+          '[WS] Connect params: conversation_id=$_conversationId num_speakers=$_genericSpeakerCount hasPreconnected=$_hasPreconnectedChannel',
+        );
+      }
       _webSocketChannel = WebSocketChannel.connect(uri);
       print('[WS] WebSocketChannel created, waiting for stream...');
 
@@ -171,7 +213,6 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
       setState(() {
         _isConnecting = false;
       });
-      _sessionStarted = true;
       print('[WS] Connection setup complete');
     } catch (e) {
       print('[WS] Connection error: $e');
@@ -215,19 +256,34 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
 
   // Phase 4: Receiving Live Captions
   void _handleWebSocketMessage(dynamic message) {
-    print('[WS] Received message: $message');
+    _rxMessageCount++;
+    final raw = message?.toString() ?? '';
+    if (_verboseCaptionLogs) {
+      print(
+        '[WS] RX #$_rxMessageCount raw_type=${message.runtimeType} raw_len=${raw.length} raw_preview=${raw.length > 140 ? raw.substring(0, 140) : raw}',
+      );
+    }
     try {
       final data = json.decode(message);
+      final event = data is Map<String, dynamic> ? data['event'] : null;
+      if (_verboseCaptionLogs && data is Map<String, dynamic>) {
+        print('[WS] Parsed event=$event keys=${data.keys.toList()}');
+      }
 
       if (data['event'] == 'final_transcript') {
+        _finalTranscriptCount++;
         final rawSpeaker = data['speaker'] ?? 'Unknown';
         final displayName = _labelMapper.resolve(rawSpeaker);
-        final caption = ChatMessage(
-          id: DateTime.now().microsecondsSinceEpoch.toString(),
-          text: data['text'] ?? '',
-          type: ChatMessage.typeSpeech,
+        final text = (data['text'] ?? '').toString();
+        if (_verboseCaptionLogs) {
+          print(
+            '[Caption] final_transcript #$_finalTranscriptCount speaker_raw=$rawSpeaker speaker_mapped=$displayName text_len=${text.length} text="$text"',
+          );
+        }
+        final caption = Caption(
+          text: text,
           speaker: displayName,
-          createdAt: DateTime.now(),
+          receivedAt: DateTime.now(),
         );
 
         setState(() {
@@ -237,9 +293,16 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
         if (_autoScroll) {
           _scrollToBottom();
         }
+      } else {
+        _nonTranscriptEventCount++;
+        if (_verboseCaptionLogs) {
+          print(
+            '[WS] Non-transcript event #$_nonTranscriptEventCount event=$event payload=$data',
+          );
+        }
       }
     } catch (e) {
-      print('Error parsing WebSocket message: $e');
+      print('[WS] Error parsing WebSocket message: $e raw=$raw');
     }
   }
 
@@ -268,7 +331,8 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
         const RecordConfig(
           encoder: AudioEncoder.pcm16bits,
           sampleRate: 16000,
-          bitRate: 16000,
+          // 16-bit PCM mono @ 16kHz = 256 kbps raw audio.
+          bitRate: 256000,
           numChannels: 1,
         ),
       );
@@ -322,9 +386,10 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
 
           _webSocketChannel!.sink.add(json.encode(message));
           _chunkCount++;
-          if (_chunkCount <= 5 || _chunkCount % 50 == 0) {
+          if (_verboseCaptionLogs) {
+            final stats = _analyzePcmChunk(audioData);
             print(
-              '[Audio] Sent chunk #$_chunkCount (${audioData.length} bytes)',
+              '[Audio] Sent chunk #$_chunkCount bytes=${audioData.length} b64_len=${base64Audio.length} samples=${stats['samples']} rms=${stats['rms']} peak=${stats['peak']} mean_abs=${stats['meanAbs']} zero_samples=${stats['zeroSamples']} preview_b64=${base64Audio.substring(0, math.min(24, base64Audio.length))}',
             );
           }
         }
@@ -387,16 +452,25 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
   }
 
   Future<void> _finalizeSession() async {
-    if (_conversationId.isEmpty || !_sessionStarted) {
-      return;
-    }
-
-    print('[Session] Finalizing session for conversation $_conversationId');
+    print('[Session] Finalizing session with ${_captions.length} captions...');
     try {
-      await ConversationService.instance
-          .finalizeConversation(_conversationId)
+      final response = await http
+          .post(
+            Uri.parse(_finalizeUrl),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({
+              'conversation_id': _conversationId,
+              'captions': _captions.map((c) => c.toJson()).toList(),
+              'speaker_map': _labelMapper.registry,
+            }),
+          )
           .timeout(const Duration(seconds: 10));
-      print('[Session] Finalize successful');
+
+      if (response.statusCode == 200) {
+        print('[Session] Finalize successful');
+      } else {
+        print('[Session] Finalize failed: ${response.statusCode}');
+      }
     } catch (e) {
       print('[Session] Error finalizing session: $e');
     }
@@ -416,7 +490,9 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
         try {
           final endMessage = {'event': 'end'};
           _webSocketChannel!.sink.add(json.encode(endMessage));
-          print('[Session] Sent end event');
+          print(
+            '[Session] Sent end event. chunks_sent=$_chunkCount ws_rx=$_rxMessageCount transcripts=$_finalTranscriptCount non_transcript_events=$_nonTranscriptEventCount',
+          );
         } catch (e) {
           print('[Session] Failed to send end event: $e');
         }
@@ -446,6 +522,48 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
       _isEndingSession = false;
       print('[Session] Session fully terminated');
     }
+  }
+
+  Map<String, String> _analyzePcmChunk(Uint8List bytes) {
+    if (bytes.length < 2) {
+      return {
+        'samples': '0',
+        'rms': '0.00',
+        'peak': '0',
+        'meanAbs': '0.00',
+        'zeroSamples': '0',
+      };
+    }
+
+    final data = ByteData.sublistView(bytes);
+    final sampleCount = bytes.length ~/ 2;
+    var sumSquares = 0.0;
+    var sumAbs = 0.0;
+    var peak = 0;
+    var zeroSamples = 0;
+
+    for (var i = 0; i + 1 < bytes.length; i += 2) {
+      final sample = data.getInt16(i, Endian.little);
+      final absSample = sample.abs();
+      if (absSample > peak) {
+        peak = absSample;
+      }
+      if (sample == 0) {
+        zeroSamples++;
+      }
+      sumSquares += sample * sample;
+      sumAbs += absSample;
+    }
+
+    final rms = math.sqrt(sumSquares / sampleCount);
+    final meanAbs = sumAbs / sampleCount;
+    return {
+      'samples': '$sampleCount',
+      'rms': rms.toStringAsFixed(2),
+      'peak': '$peak',
+      'meanAbs': meanAbs.toStringAsFixed(2),
+      'zeroSamples': '$zeroSamples',
+    };
   }
 
   void _scrollToBottom() {
@@ -718,7 +836,6 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
                             itemCount: _captions.length,
                             itemBuilder: (context, index) {
                               final caption = _captions[index];
-                              final speakerName = caption.speaker ?? 'Unknown';
                               return Container(
                                 margin: const EdgeInsets.only(bottom: 12),
                                 padding: const EdgeInsets.all(12),
@@ -729,7 +846,7 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border(
                                     left: BorderSide(
-                                      color: _getSpeakerColor(speakerName),
+                                      color: _getSpeakerColor(caption.speaker),
                                       width: 4,
                                     ),
                                   ),
@@ -738,10 +855,12 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      speakerName,
+                                      caption.speaker,
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        color: _getSpeakerColor(speakerName),
+                                        color: _getSpeakerColor(
+                                          caption.speaker,
+                                        ),
                                         fontSize: 14,
                                       ),
                                     ),
@@ -756,7 +875,7 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      "${caption.createdAt.hour.toString().padLeft(2, '0')}:${caption.createdAt.minute.toString().padLeft(2, '0')}",
+                                      "${caption.receivedAt.hour.toString().padLeft(2, '0')}:${caption.receivedAt.minute.toString().padLeft(2, '0')}",
                                       style: const TextStyle(
                                         color: Color(0xFFC67C4E),
                                         fontSize: 12,

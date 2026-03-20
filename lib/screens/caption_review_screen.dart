@@ -14,6 +14,21 @@ class _CaptionReviewScreenState extends State<CaptionReviewScreen> {
   bool _isLoading = true;
   String? _errorMessage;
 
+  static const List<String> _monthNames = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -50,6 +65,74 @@ class _CaptionReviewScreenState extends State<CaptionReviewScreen> {
         ),
       ),
     );
+  }
+
+  int _messageCount(Map<String, dynamic> conversation) {
+    final value = conversation['message_count'];
+    if (value is int) {
+      return value;
+    }
+    if (value is String) {
+      return int.tryParse(value) ?? 0;
+    }
+    return 0;
+  }
+
+  String _formatHistoryTimestamp(dynamic rawValue) {
+    final parsed = _parseTimestamp(rawValue);
+    if (parsed == null) {
+      return 'Unknown time';
+    }
+
+    final local = parsed.toLocal();
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final messageDay = DateTime(local.year, local.month, local.day);
+    final dayDiff = todayStart.difference(messageDay).inDays;
+
+    final timeText = _formatTime(local);
+    if (dayDiff == 0) {
+      return 'Today at $timeText';
+    }
+    if (dayDiff == 1) {
+      return 'Yesterday at $timeText';
+    }
+
+    final month = _monthNames[local.month - 1];
+    return '$month ${local.day}, ${local.year} at $timeText';
+  }
+
+  DateTime? _parseTimestamp(dynamic rawValue) {
+    if (rawValue == null) {
+      return null;
+    }
+
+    if (rawValue is DateTime) {
+      return rawValue;
+    }
+
+    if (rawValue is int) {
+      return DateTime.fromMillisecondsSinceEpoch(rawValue, isUtc: true);
+    }
+
+    final text = rawValue.toString().trim();
+    if (text.isEmpty || text == 'null') {
+      return null;
+    }
+
+    final asInt = int.tryParse(text);
+    if (asInt != null) {
+      return DateTime.fromMillisecondsSinceEpoch(asInt, isUtc: true);
+    }
+
+    return DateTime.tryParse(text);
+  }
+
+  String _formatTime(DateTime dt) {
+    final hour12 = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final period = dt.hour >= 12 ? 'PM' : 'AM';
+    return '$hour12:$minute $period';
   }
 
   @override
@@ -119,6 +202,11 @@ class _CaptionReviewScreenState extends State<CaptionReviewScreen> {
               itemCount: _conversations.length,
               itemBuilder: (context, index) {
                 final conversation = _conversations[index];
+                final messageCount = _messageCount(conversation);
+                final messageLabel = messageCount == 1 ? 'message' : 'messages';
+                final prettyTimestamp = _formatHistoryTimestamp(
+                  conversation['created_at'],
+                );
                 return Card(
                   margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
@@ -129,9 +217,12 @@ class _CaptionReviewScreenState extends State<CaptionReviewScreen> {
                     title: Text(
                       conversation['title'] ?? 'Untitled Conversation',
                       style: const TextStyle(fontWeight: FontWeight.bold),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: false,
                     ),
                     subtitle: Text(
-                      '${conversation['message_count'] ?? 0} messages • ${conversation['created_at'] ?? 'Unknown time'}',
+                      '$messageCount $messageLabel • $prettyTimestamp',
                     ),
                     trailing: const Icon(Icons.arrow_forward_ios),
                     onTap: () => _viewConversation(
