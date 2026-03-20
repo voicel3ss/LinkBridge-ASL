@@ -332,7 +332,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                         width: 18,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          valueColor: const AlwaysStoppedAnimation<Color>(
+                                          valueColor: AlwaysStoppedAnimation<Color>(
                                             Color(0xFF7A4419),
                                           ),
                                         ),

@@ -9,12 +9,12 @@ class GlowingContainer extends StatefulWidget {
   final bool animate;
 
   const GlowingContainer({
-    Key? key,
+    super.key,
     required this.child,
     this.glowColor = Colors.white,
     this.glowBlurRadius = 12,
     this.animate = true,
-  }) : super(key: key);
+  });
 
   @override
   State<GlowingContainer> createState() => _GlowingContainerState();
@@ -85,12 +85,12 @@ class AnimatedRippleButton extends StatefulWidget {
   final BorderRadius borderRadius;
 
   const AnimatedRippleButton({
-    Key? key,
+    super.key,
     required this.onPressed,
     required this.child,
     this.rippleColor = Colors.white,
     this.borderRadius = const BorderRadius.all(Radius.circular(12)),
-  }) : super(key: key);
+  });
 
   @override
   State<AnimatedRippleButton> createState() => _AnimatedRippleButtonState();
@@ -152,11 +152,11 @@ class FloatingWidget extends StatefulWidget {
   final double offset;
 
   const FloatingWidget({
-    Key? key,
+    super.key,
     required this.child,
     this.duration = const Duration(milliseconds: 3000),
     this.offset = 10.0,
-  }) : super(key: key);
+  });
 
   @override
   State<FloatingWidget> createState() => _FloatingWidgetState();
@@ -230,7 +230,7 @@ class CelebrationEffect extends StatefulWidget {
   final List<Color> colors;
 
   const CelebrationEffect({
-    Key? key,
+    super.key,
     required this.onComplete,
     this.duration = const Duration(milliseconds: 1500),
     this.colors = const [
@@ -239,7 +239,7 @@ class CelebrationEffect extends StatefulWidget {
       Color(0xFFF7EFDD),
       Color(0xFF8B6B5F),
     ],
-  }) : super(key: key);
+  });
 
   @override
   State<CelebrationEffect> createState() => _CelebrationEffectState();

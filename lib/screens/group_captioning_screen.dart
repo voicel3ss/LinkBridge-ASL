@@ -63,7 +63,7 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
   // Phase 5: Caption State Management
   final List<Caption> _captions = [];
   final ScrollController _scrollController = ScrollController();
-  bool _autoScroll = true;
+  final bool _autoScroll = true;
   String _conversationId = '';
 
   // Phase 9: Error Handling
@@ -615,8 +615,8 @@ class _GroupCaptioningScreenState extends State<GroupCaptioningScreen> {
           );
         },
         backgroundColor: const Color(0xFFC67C4E),
-        child: const Icon(Icons.history),
         tooltip: 'View Caption History',
+        child: const Icon(Icons.history),
       ),
     );
   }
