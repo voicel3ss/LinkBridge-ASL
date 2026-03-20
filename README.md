@@ -16,6 +16,7 @@ The group captioning experience was shaped by a real-world need: tracking who is
 For users with visual impairments, the Reader mode converts visible text into speech on demand. This supports day-to-day independence in environments where Braille or accessible signage may not be available.
 
 In short, LinkBridge is built to reduce communication friction, preserve important information, and make it easier for people to remain active participants in school, work, and family life.
+**Platform support (important):** This project currently targets mobile devices only — Android and iOS. Key reader and TTS features rely on native plugins and are not supported on web builds.
 
 At a high level, the app does three things well today:
 1. Handles authentication with Firebase (email + password).
@@ -215,6 +216,20 @@ Choose a specific device:
 flutter devices
 flutter run -d <device_id>
 ```
+
+Emulator (Android Studio AVD):
+
+- Use an x86_64 AVD with a **Google Play** system image so Play services and a TTS engine are available.
+- In AVD Manager → Edit (pencil) → Advanced Settings, set **Back Camera** to `webcam0` (or use `VirtualScene`), and ensure the virtual microphone is enabled.
+- Start the emulator with the back camera mapped to your webcam (optional):
+
+```bash
+emulator -avd <AVD_NAME> -camera-back webcam0
+```
+
+- When running the app, grant runtime permission prompts for Camera and Microphone.
+- Limitations: camera quality and model downloads may be flaky on some images; the iOS Simulator does not provide a usable camera feed — use a physical device for final verification.
+
 
 iOS (macOS only):
 
