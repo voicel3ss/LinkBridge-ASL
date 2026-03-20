@@ -1,6 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'dart:async';
+import 'package:flutter/material.dart';
+
+import '../models/chat_message.dart';
+import '../services/asl_stream_service.dart';
+import '../services/conversation_service.dart';
 
 class TranslatorScreen extends StatefulWidget {
   const TranslatorScreen({super.key});
@@ -13,6 +17,12 @@ class _TranslatorScreenState extends State<TranslatorScreen> {
   CameraController? cameraController;
   bool isCameraReady = false;
   String recognizedSign = "No sign detected";
+  bool _isDisposed = false;
+  bool _isAslConnecting = false;
+  final AslStreamService _aslService = AslStreamService();
+  StreamSubscription<ChatMessage>? _aslMessageSub;
+  DateTime _lastFrameSentAt = DateTime.fromMillisecondsSinceEpoch(0);
+  static const int _sendFrameIntervalMs = 250;
 
 
   @override
@@ -23,18 +33,32 @@ class _TranslatorScreenState extends State<TranslatorScreen> {
 
   Future<void> initCamera() async {
     try {
+      if (cameraController != null) {
+        try {
+          if (cameraController!.value.isStreamingImages) {
+            await cameraController!.stopImageStream();
+          }
+          await cameraController!.dispose();
+        } catch (_) {}
+        cameraController = null;
+      }
+
       // Get all available cameras
       final cameras = await availableCameras();
 
       if (cameras.isEmpty) {
-        setState(() {
-          recognizedSign = "No camera found";
-        });
+        if (mounted) {
+          setState(() {
+            recognizedSign = "No camera found";
+          });
+        }
         return;
       }
 
-      // Use the back camera (preferred)
-      final camera = cameras.first;
+      final camera = cameras.firstWhere(
+        (c) => c.lensDirection == CameraLensDirection.back,
+        orElse: () => cameras.first,
+      );
 
       cameraController = CameraController(
         camera,
@@ -44,6 +68,8 @@ class _TranslatorScreenState extends State<TranslatorScreen> {
 
       await cameraController!.initialize();
 
+      if (!mounted || _isDisposed) return;
+
       setState(() {
         isCameraReady = true;
       });
@@ -51,24 +77,77 @@ class _TranslatorScreenState extends State<TranslatorScreen> {
       // Start frame stream for ASL detection
       cameraController!.startImageStream(processCameraImage);
     } catch (e) {
-      setState(() {
-        recognizedSign = "Camera error: $e";
-      });
+      if (mounted) {
+        setState(() {
+          isCameraReady = false;
+          recognizedSign = "Camera error: $e";
+        });
+      }
     }
   }
 
-  // TODO: Actual ML goes here.
-  // For now: simulate detection text
   Future<void> processCameraImage(CameraImage image) async {
-    // Fake detection for demo:
-    setState(() {
-      recognizedSign = "Detecting... (ML model not added yet)";
-    });
+    if (!mounted || _isDisposed) return;
+
+    await _ensureAslConnection();
+    if (!_aslService.isConnected) {
+      return;
+    }
+
+    final now = DateTime.now();
+    if (now.difference(_lastFrameSentAt).inMilliseconds <
+        _sendFrameIntervalMs) {
+      return;
+    }
+    _lastFrameSentAt = now;
+
+    final frameBytes = image.planes.first.bytes;
+    _aslService.sendFrameBytes(frameBytes);
+  }
+
+  Future<void> _ensureAslConnection() async {
+    if (_aslService.isConnected || _isAslConnecting) {
+      return;
+    }
+
+    _isAslConnecting = true;
+    try {
+      final conversationId = await ConversationService.instance
+          .getOrCreateConversation(allowLocalFallback: true);
+      await _aslService.connect(conversationId: conversationId);
+
+      _aslMessageSub ??= _aslService.messageStream.listen((message) {
+        if (!mounted) return;
+        setState(() {
+          recognizedSign = message.text;
+        });
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        recognizedSign = 'ASL connection error: $e';
+      });
+    } finally {
+      _isAslConnecting = false;
+    }
   }
 
   @override
   void dispose() {
-    cameraController?.dispose();
+    _isDisposed = true;
+    final controller = cameraController;
+    cameraController = null;
+
+    if (controller != null) {
+      if (controller.value.isStreamingImages) {
+        unawaited(controller.stopImageStream());
+      }
+      unawaited(controller.dispose());
+    }
+
+    unawaited(_aslMessageSub?.cancel());
+    unawaited(_aslService.dispose());
+
     super.dispose();
   }
 
@@ -132,11 +211,52 @@ class _TranslatorScreenState extends State<TranslatorScreen> {
                     const SizedBox(height: 12),
 
                     Expanded(
-                      child: SingleChildScrollView(
-                        child: Text(
-                          recognizedSign,
-                          style: const TextStyle(fontSize: 24, color: Color(0xFFC67C4E)),
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            recognizedSign,
+                            style: const TextStyle(
+                              fontSize: 24,
+                              color: Color(0xFFC67C4E),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Recent ASL Messages',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF3C3C3C),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Expanded(
+                            child: _aslService.messages.isEmpty
+                                ? const Text(
+                                    'No ASL results yet',
+                                    style: TextStyle(color: Color(0xFF8B6B5F)),
+                                  )
+                                : ListView.builder(
+                                    itemCount: _aslService.messages.length,
+                                    itemBuilder: (context, index) {
+                                      final msg = _aslService.messages[index];
+                                      return Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 8,
+                                        ),
+                                        child: Text(
+                                          '${msg.text}  (${msg.createdAt.hour.toString().padLeft(2, '0')}:${msg.createdAt.minute.toString().padLeft(2, '0')})',
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            color: Color(0xFF3C3C3C),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                          ),
+                        ],
                       ),
                     ),
 
@@ -146,6 +266,7 @@ class _TranslatorScreenState extends State<TranslatorScreen> {
                       onPressed: () {
                         setState(() {
                           recognizedSign = "Cleared";
+                          _aslService.clearMessages();
                         });
                       },
                       style: ElevatedButton.styleFrom(

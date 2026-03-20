@@ -1,258 +1,289 @@
-# LinkBridge (ASL + Accessibility App)
+# LinkBridge
 
-LinkBridge is a Flutter application designed to improve accessibility and communication. It provides:
+LinkBridge is a Flutter accessibility app focused on real-time communication support.
 
-- Secure login and sign-up (Firebase Authentication)
-- Camera-based ASL translator screen (camera preview with recognition placeholder logic)
-- Group captioning with live speech-to-text via WebSocket backend
-- Educational resources about ASL and accessibility
-- Caption history review
+## Vision and Motivation
 
-------------------------------------------------------------
+LinkBridge is designed to support people who experience hearing or vision-related communication barriers in everyday life. The core goal is simple: help users stay independent, informed, and included in conversations and environments that often assume everyone can hear and see clearly.
 
-TECH STACK
+The app combines multiple accessibility workflows in one place so users do not have to switch tools during daily tasks:
+1. Camera-based text recognition with spoken playback for reading signs, menus, and printed information.
+2. Live multi-speaker captioning for group conversations.
+3. Conversation history for reviewing previously captured speech captions.
 
-- Flutter (Dart SDK ^3.10.1)
-- Firebase
-  - firebase_core
-  - firebase_auth
-- Device Capabilities
-  - camera
-  - record (microphone)
-  - permission_handler
-- Networking
-  - http
-  - web_socket_channel
-- External Links
-  - url_launcher
+The group captioning experience was shaped by a real-world need: tracking who is speaking in fast family or social conversations can be difficult even with hearing support devices. LinkBridge addresses that by labeling speakers and presenting readable, timestamped captions in real time.
 
-------------------------------------------------------------
+For users with visual impairments, the Reader mode converts visible text into speech on demand. This supports day-to-day independence in environments where Braille or accessible signage may not be available.
 
-GETTING STARTED
+In short, LinkBridge is built to reduce communication friction, preserve important information, and make it easier for people to remain active participants in school, work, and family life.
 
-1) Prerequisites
+At a high level, the app does three things well today:
+1. Handles authentication with Firebase (email + password).
+2. Runs live multi-speaker audio captioning through a WebSocket backend.
+3. Provides assistive reading (camera OCR + text-to-speech) and educational content.
 
-Install:
-- Flutter SDK (compatible with Dart ^3.10.1)
-- Android Studio (for Android)
-- Xcode (for iOS on macOS)
-- A physical device recommended for camera + microphone testing
+## Current Product Scope (What Users See)
 
-Verify setup:
-
-    flutter doctor
-
-------------------------------------------------------------
-
-2) Clone the Repository
-
-    git clone https://github.com/reyanshjajoo/LinkBridge-ASL.git
-    cd LinkBridge-ASL
-    flutter pub get
-
-------------------------------------------------------------
-
-FIREBASE SETUP (Required for Authentication)
-
-The app initializes Firebase at startup and requires a generated firebase_options.dart file.
-
-Recommended Method: FlutterFire CLI
-
-Install FlutterFire CLI:
-
-    dart pub global activate flutterfire_cli
-
-Configure Firebase:
-
-    flutterfire configure
-
-This generates:
-- lib/firebase_options.dart
-- android/app/google-services.json
-- ios/Runner/GoogleService-Info.plist (if iOS configured)
-
-Firebase Console Checklist:
-1. Go to Authentication
-2. Enable Email/Password sign-in method
-
-------------------------------------------------------------
-
-RUNNING THE APP
-
-Android:
-
-    flutter run
-
-If multiple devices:
-
-    flutter devices
-    flutter run -d <device_id>
-
-iOS (macOS only):
-
-    cd ios
-    pod install
-    cd ..
-    flutter run
-
-Web (optional, limited camera/mic support):
-
-    flutter run -d chrome
-
-------------------------------------------------------------
-
-HOW TO USE THE APP
-
-AUTHENTICATION
-
-Create Account:
-1. Tap "Create an Account"
-2. Enter email and password
-3. Tap "Sign Up"
-4. You will be redirected to Home
-
-Log In:
-1. Enter email and password
-2. Tap "Login"
-3. You will be redirected to Home
-
-Sign Out:
-1. Go to Account tab
-2. Tap "Sign Out"
-
-------------------------------------------------------------
-
-HOME SCREEN TABS
-
-After login, you will see four tabs:
-
-1. Camera
-2. Audio
+After login, the Home screen exposes 4 tabs:
+1. Audio
+2. Reader
 3. Learn
 4. Account
 
-------------------------------------------------------------
+Important note: the old camera sign translator screen is no longer shown in the app navigation.
 
-CAMERA TAB (ASL Translator)
+## What Works Right Now
 
-What It Does:
-- Opens camera preview
-- Processes frames
-- Displays recognition status text
+Working features:
+1. Sign up and login with Firebase Authentication.
+2. Sign out from the Account tab.
+3. Group captioning session start/stop with microphone audio streaming.
+4. Session finalization and conversation persistence through backend APIs.
+5. Caption history list and conversation detail view.
+6. Optional named-speaker identification flow before captioning.
+7. Reader tab camera scan with on-device OCR and spoken playback.
+8. Learn tab educational content and external links.
 
-How To Use:
-1. Grant camera permission
-2. Hold hand signs in view
-3. Recognition text appears on screen
-4. Tap "Clear" to reset
+Known limitations and in-progress behavior:
+1. Share action in caption detail shows a "coming soon" message.
+2. Several debug prints are still present in streaming flows.
+3. The translator screen code exists in the repository but is intentionally not reachable from Home.
+4. Reader mode currently reads text aloud in-session but does not persist OCR scans to history.
 
-------------------------------------------------------------
+## Tech Stack
 
-AUDIO TAB (Group Captioning)
+Core:
+1. Flutter (Dart SDK ^3.10.1)
+2. Firebase Core + Firebase Auth
 
-What It Does:
-- Requests microphone permission
-- Streams audio via WebSocket
-- Displays live captions
-- Saves sessions to caption history
+Device and media:
+1. camera
+2. google_mlkit_text_recognition
+3. flutter_tts
+4. record
+5. permission_handler
 
-How To Use:
-1. Grant microphone permission
-2. Tap "Start Captioning"
-3. Speak normally
-4. Live captions appear
-5. End session to finalize and save
-6. View saved sessions in caption history
+Networking:
+1. web_socket_channel
+2. http
 
-------------------------------------------------------------
+Other UI/runtime:
+1. url_launcher
+2. confetti
 
-BACKEND REQUIREMENT (IMPORTANT)
+## Architecture Overview
 
-Group captioning requires a backend server.
+### App startup and routing
 
-Current endpoints:
+`lib/main.dart` initializes Firebase, then launches `MaterialApp` with named routes:
+1. `/login`
+2. `/register`
+3. `/home`
 
-WebSocket:
-https://aslappserver.onrender.com/speech/ws
+### Home shell
 
-Finalize:
-https://aslappserver.onrender.com/speech/finalize
+`lib/screens/home_screen.dart` uses an `IndexedStack` to preserve tab state while switching between:
+1. `GroupCaptioningScreen` (Audio)
+2. `TextReaderPage` (Reader)
+3. `EducationScreen` (Learn)
+4. Account summary/sign-out panel
 
-Save captions:
-https://aslappserver.onrender.com/speech/save
+### Live captioning flow
 
-List conversations:
-https://aslappserver.onrender.com/speech/conversations
+Primary files:
+1. `lib/screens/group_captioning_screen.dart`
+2. `lib/screens/speaker_setup_screen.dart`
+3. `lib/screens/speaker_identification_screen.dart`
+4. `lib/services/conversation_service.dart`
+5. `lib/services/caption_review_service.dart`
+6. `lib/services/speaker_label_mapper.dart`
 
-Get captions:
-https://aslappserver.onrender.com/speech/captions/<conversationId>
+How it works:
+1. A conversation ID is created via `ConversationService` (`/conversations`) or generated locally if fallback is allowed.
+2. The app connects to `wss://aslappserver.onrender.com/speech/ws`.
+3. Microphone PCM16 chunks are streamed as base64 `audio_chunk` events.
+4. Incoming `final_transcript` events are appended to in-memory captions.
+5. On session end, the app sends an `end` event, stops recording, closes the socket, and calls `/speech/finalize`.
+6. History screens fetch from `/conversations` and `/conversations/{id}`.
 
-------------------------------------------------------------
+Named-speaker mode:
+1. `SpeakerSetupScreen` collects 2-6 names.
+2. App opens speech socket in `mode=identifying`.
+3. `SpeakerIdentificationScreen` listens for `speaker_detected` and maps backend labels to user names.
+4. Speaker registry is posted to `/speech/register_speakers`.
+5. Flow transitions into normal captioning mode with pre-connected socket.
 
-LEARN TAB
+### Reader flow
 
-- Displays ASL and accessibility educational content
-- External links open in browser
-- Scroll and explore resources
+Primary file:
+1. `lib/screens/text_reader_page.dart`
 
-------------------------------------------------------------
+How it works:
+1. Requests camera permission.
+2. Captures a still image from camera preview.
+3. Runs OCR using Google ML Kit text recognizer.
+4. Speaks recognized text using Flutter TTS.
 
-ACCOUNT TAB
+### Learn and account
 
-- Shows logged-in user email
-- Allows sign out
+Primary files:
+1. `lib/screens/education_screen.dart`
+2. `lib/screens/home_screen.dart`
 
-------------------------------------------------------------
+Behavior:
+1. Learn tab presents educational content and opens external resources.
+2. Account tab shows current user email and allows sign out.
 
-PERMISSIONS
+## Backend Contract Used by the App
 
-Required:
-- Camera (Camera tab)
-- Microphone (Audio tab)
+Configured host:
+1. `https://aslappserver.onrender.com`
 
-If features are not working:
-- Verify OS-level permissions
-- Ensure no other app is using camera
-- Test on a real device
+Endpoints currently referenced in Flutter code:
+1. `wss://aslappserver.onrender.com/speech/ws`
+2. `POST /conversations`
+3. `GET /conversations`
+4. `GET /conversations/{id}`
+5. `POST /speech/finalize`
+6. `POST /speech/register_speakers`
 
-------------------------------------------------------------
+## Backend Bridge and Wake-Up
 
-PROJECT STRUCTURE
+Group captioning uses a backend bridge by design.
 
+Why this exists:
+1. Speaker diarization/transcription capabilities were implemented in the server stack using gRPC-oriented tooling.
+2. The Flutter app communicates over WebSocket for live audio streaming.
+3. The backend acts as a protocol middle layer: app WebSocket in, diarization/transcription pipeline out.
+
+Server deployment and source:
+1. Deployment: `https://aslappserver.onrender.com`
+2. Health check: `https://aslappserver.onrender.com/health`
+3. Server repository: `https://github.com/MINTALLOYY/ASLAppServer`
+
+Cold-start behavior (Render):
+1. The backend may sleep when idle.
+2. Before demoing or testing group captioning, call the health endpoint once.
+3. Start captioning after the health check responds successfully.
+
+## Setup
+
+### Prerequisites
+
+1. Flutter SDK compatible with Dart `^3.10.1`
+2. Android Studio (Android builds)
+3. Xcode (iOS builds on macOS)
+4. Firebase project with Email/Password auth enabled
+5. Physical device recommended for camera and microphone testing
+
+Verify local tooling:
+
+```bash
+flutter doctor
 ```
+
+### Install dependencies
+
+```bash
+flutter pub get
+```
+
+### Firebase configuration
+
+The app expects `lib/firebase_options.dart` and platform Firebase config files.
+
+Recommended setup using FlutterFire CLI:
+
+```bash
+dart pub global activate flutterfire_cli
+flutterfire configure
+```
+
+In Firebase Console, enable Email/Password under Authentication.
+
+## Running the App
+
+Android:
+
+```bash
+flutter run
+```
+
+Choose a specific device:
+
+```bash
+flutter devices
+flutter run -d <device_id>
+```
+
+iOS (macOS only):
+
+```bash
+cd ios
+pod install
+cd ..
+flutter run
+```
+
+Web (limited mic/camera behavior):
+
+```bash
+flutter run -d chrome
+```
+
+## Permissions
+
+Runtime permissions used:
+1. Microphone (Audio tab and speaker identification)
+2. Camera (Reader tab)
+
+If a feature fails unexpectedly, verify OS permissions first.
+
+## Repository Layout
+
+```text
 lib/
-├── main.dart
-├── screens/
-│   ├── login_screen.dart
-│   ├── register_screen.dart
-│   ├── home_screen.dart
-│   ├── translator_screen.dart
-│   ├── group_captioning_screen.dart
-│   ├── education_screen.dart
-│   └── caption_review_screen.dart
-└── services/
-    └── caption_review_service.dart
+    main.dart
+    firebase_options.dart
+    models/
+        chat_message.dart
+        speaker_profile.dart
+    screens/
+        login_screen.dart
+        register_screen.dart
+        home_screen.dart
+        group_captioning_screen.dart
+        speaker_setup_screen.dart
+        speaker_identification_screen.dart
+        caption_review_screen.dart
+        text_reader_page.dart
+        education_screen.dart
+        translator_screen.dart
+    services/
+        conversation_service.dart
+        caption_review_service.dart
+        speaker_label_mapper.dart
+        asl_stream_service.dart
 ```
 
-------------------------------------------------------------
+## Troubleshooting
 
-TROUBLESHOOTING
+Authentication issues:
+1. Re-run `flutterfire configure`.
+2. Confirm `firebase_options.dart` matches your project.
+3. Ensure Email/Password sign-in is enabled.
 
-Firebase Initialization Errors:
-- Run flutterfire configure again
-- Confirm firebase_options.dart exists
-- Enable Email/Password in Firebase Console
+No live captions:
+1. Confirm microphone permission was granted.
+2. Confirm backend is reachable from device network.
+3. Verify backend supports the endpoints listed above.
 
-Camera Not Working:
-- Use a physical device
-- Check permissions
-- Restart app
+Reader problems:
+1. Test on a physical device instead of emulator when possible.
+2. Confirm camera permission.
+3. Retry after closing other apps that may hold camera resources.
 
-No Captions Appearing:
-- Confirm microphone permission
-- Ensure backend is reachable
-- Verify endpoint URLs
+## Development Notes
 
-------------------------------------------------------------
-
-Built with accessibility and inclusion in mind.
+1. `translator_screen.dart` remains in the codebase but is not currently part of the visible app flow.
+2. If you re-enable it later, update `home_screen.dart` and this README together.

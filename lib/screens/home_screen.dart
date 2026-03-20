@@ -3,9 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import 'translator_screen.dart';
 import 'education_screen.dart';
+import 'text_reader_page.dart';
 
+/// App shell with persistent bottom navigation.
+///
+/// Each tab keeps its state alive via [IndexedStack], so users can switch
+/// between tools without losing in-progress work.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -28,19 +32,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       vsync: this,
     );
 
-    // Create staggered animations for nav items
+    // Stagger each nav icon so the bar feels responsive on first load.
     _navAnimations = List.generate(4, (index) {
-      return Tween<double>(
-        begin: 0.0,
-        end: 1.0,
-      ).animate(CurvedAnimation(
-        parent: _navController,
-        curve: Interval(
-          index * 0.1,
-          0.6 + index * 0.1,
-          curve: Curves.elasticOut,
+      return Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(
+          parent: _navController,
+          curve: Interval(
+            index * 0.1,
+            0.6 + index * 0.1,
+            curve: Curves.elasticOut,
+          ),
         ),
-      ));
+      );
     });
 
     _navController.forward();
@@ -53,14 +56,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _signOut() async {
+    // Sign-out can complete after this widget is removed, so guard navigation.
     await FirebaseAuth.instance.signOut();
     if (!mounted) return;
     Navigator.pushReplacementNamed(context, "/login");
   }
 
   void _onNavTap(int index) {
+    // Light haptics make tab changes feel intentional without being distracting.
     setState(() => _index = index);
-    // Add haptic feedback or subtle animation here
     HapticFeedback.lightImpact();
   }
 
@@ -113,22 +117,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   ],
 ),
 
-
       body: SafeArea(
         child: IndexedStack(
           index: _index,
           children: [
-            // These screens should ideally NOT create their own Scaffold/AppBar.
-            // If they currently do, scroll down to the note below.
-            const TranslatorScreen(),
             const GroupCaptioningScreen(),
+            const TextReaderPage(),
             const EducationScreen(),
-
-            // Account tab (simple, no card)
-            _AccountPage(
-              email: user?.email,
-              onSignOut: _signOut,
-            ),
+            _AccountPage(email: user?.email, onSignOut: _signOut),
           ],
         ),
       ),
@@ -144,18 +140,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             unselectedItemColor: Colors.black54,
             backgroundColor: const Color(0xFFD7BE82),
             elevation: 8,
+            // Technical debt: this screen relies on the same tab order in
+            // _tabTitles, IndexedStack.children, and nav items below.
+            // If a tab is inserted/reordered, update all three together.
             items: [
               BottomNavigationBarItem(
                 icon: ScaleTransition(
                   scale: _navAnimations[0],
-                  child: const Icon(Icons.pan_tool_alt_outlined),
+                  child: const Icon(Icons.mic_none_outlined),
                 ),
                 label: "ASL Camera Translator",
               ),
               BottomNavigationBarItem(
                 icon: ScaleTransition(
                   scale: _navAnimations[1],
-                  child: const Icon(Icons.mic_none_outlined),
+                  child: const Icon(Icons.text_fields),
                 ),
                 label: "Live Captions",
               ),
@@ -181,14 +180,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 }
 
+/// Lightweight account summary shown in the fourth tab.
+///
+/// This widget stays intentionally read-only so sign-out remains the only
+/// account action from the home shell.
 class _AccountPage extends StatelessWidget {
   final String? email;
   final Future<void> Function() onSignOut;
 
-  const _AccountPage({
-    required this.email,
-    required this.onSignOut,
-  });
+  const _AccountPage({required this.email, required this.onSignOut});
 
   @override
   Widget build(BuildContext context) {
@@ -197,8 +197,6 @@ class _AccountPage extends StatelessWidget {
       child: Column(
         children: [
           const SizedBox(height: 18),
-
-          // Profile header
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(18),
@@ -248,8 +246,6 @@ class _AccountPage extends StatelessWidget {
           ),
 
           const SizedBox(height: 16),
-
-          // Sign out button (primary)
           ElevatedButton.icon(
             onPressed: onSignOut,
             icon: const Icon(Icons.logout),
