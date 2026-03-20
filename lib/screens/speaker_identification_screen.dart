@@ -32,6 +32,8 @@ class SpeakerIdentificationScreen extends StatefulWidget {
 
 class _SpeakerIdentificationScreenState
     extends State<SpeakerIdentificationScreen> {
+  static const bool _verboseIdLogs = true;
+
   final AudioRecorder _recorder = AudioRecorder();
   int _currentIndex = 0;
   IdentificationState _state = IdentificationState.waiting;
@@ -69,7 +71,18 @@ class _SpeakerIdentificationScreenState
   }
 
   void _handleMessage(dynamic raw) {
+    if (_verboseIdLogs) {
+      final payload = raw?.toString() ?? '';
+      debugPrint(
+        '[ID][WS] Raw message type=${raw.runtimeType} len=${payload.length} preview=${payload.length > 140 ? payload.substring(0, 140) : payload}',
+      );
+    }
     final data = json.decode(raw);
+    if (_verboseIdLogs) {
+      debugPrint(
+        '[ID][WS] Parsed event=${data['event']} keys=${data.keys.toList()}',
+      );
+    }
     if (data['event'] == 'speaker_detected') {
       debugPrint('[ID] speaker_detected: ${data['label']}');
       _onSpeakerDetected(data['label']);
@@ -126,7 +139,8 @@ class _SpeakerIdentificationScreenState
         const RecordConfig(
           encoder: AudioEncoder.pcm16bits,
           sampleRate: 16000,
-          bitRate: 16000,
+          // 16-bit PCM mono @ 16kHz = 256 kbps raw audio.
+          bitRate: 256000,
           numChannels: 1,
         ),
       );
@@ -142,9 +156,10 @@ class _SpeakerIdentificationScreenState
               }),
             );
             _chunkCount++;
-            if (_chunkCount <= 5 || _chunkCount % 50 == 0) {
+            if (_verboseIdLogs) {
+              final b64 = base64.encode(chunk);
               debugPrint(
-                '[ID] Sent audio chunk #$_chunkCount (${chunk.length} bytes)',
+                '[ID] Sent audio chunk #$_chunkCount bytes=${chunk.length} b64_len=${b64.length} b64_preview=${b64.substring(0, b64.length > 24 ? 24 : b64.length)}',
               );
             }
           } catch (e) {

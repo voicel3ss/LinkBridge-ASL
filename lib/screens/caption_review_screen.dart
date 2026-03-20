@@ -14,6 +14,21 @@ class _CaptionReviewScreenState extends State<CaptionReviewScreen> {
   bool _isLoading = true;
   String? _errorMessage;
 
+  static const List<String> _monthNames = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -52,20 +67,91 @@ class _CaptionReviewScreenState extends State<CaptionReviewScreen> {
     );
   }
 
+  int _messageCount(Map<String, dynamic> conversation) {
+    final value = conversation['message_count'];
+    if (value is int) {
+      return value;
+    }
+    if (value is String) {
+      return int.tryParse(value) ?? 0;
+    }
+    return 0;
+  }
+
+  String _formatHistoryTimestamp(dynamic rawValue) {
+    final parsed = _parseTimestamp(rawValue);
+    if (parsed == null) {
+      return 'Unknown time';
+    }
+
+    final local = parsed.toLocal();
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final messageDay = DateTime(local.year, local.month, local.day);
+    final dayDiff = todayStart.difference(messageDay).inDays;
+
+    final timeText = _formatTime(local);
+    if (dayDiff == 0) {
+      return 'Today at $timeText';
+    }
+    if (dayDiff == 1) {
+      return 'Yesterday at $timeText';
+    }
+
+    final month = _monthNames[local.month - 1];
+    return '$month ${local.day}, ${local.year} at $timeText';
+  }
+
+  DateTime? _parseTimestamp(dynamic rawValue) {
+    if (rawValue == null) {
+      return null;
+    }
+
+    if (rawValue is DateTime) {
+      return rawValue;
+    }
+
+    if (rawValue is int) {
+      return DateTime.fromMillisecondsSinceEpoch(rawValue, isUtc: true);
+    }
+
+    final text = rawValue.toString().trim();
+    if (text.isEmpty || text == 'null') {
+      return null;
+    }
+
+    final asInt = int.tryParse(text);
+    if (asInt != null) {
+      return DateTime.fromMillisecondsSinceEpoch(asInt, isUtc: true);
+    }
+
+    return DateTime.tryParse(text);
+  }
+
+  String _formatTime(DateTime dt) {
+    final hour12 = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final period = dt.hour >= 12 ? 'PM' : 'AM';
+    return '$hour12:$minute $period';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFD7BE82),  // Warm gold background
+      backgroundColor: const Color(0xFFD7BE82), // Warm gold background
       appBar: AppBar(
-        backgroundColor: const Color(0xFF515A47),  // Sage green header
+        backgroundColor: const Color(0xFF515A47), // Sage green header
         elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
         title: _conversations.isEmpty
-            ? const Text('Start a captioning session',
-              style: TextStyle(color: Colors.white),
-            )
-            : const Text('Caption History',
-              style: TextStyle(color: Colors.white),
-            ),
+            ? const Text(
+                'Start a captioning session',
+                style: TextStyle(color: Colors.white),
+              )
+            : const Text(
+                'Caption History',
+                style: TextStyle(color: Colors.white),
+              ),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -114,33 +200,75 @@ class _CaptionReviewScreenState extends State<CaptionReviewScreen> {
                 ],
               ),
             )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _conversations.length,
-              itemBuilder: (context, index) {
-                final conversation = _conversations[index];
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: const Color.fromARGB(255, 60, 120, 88),
-                      child: const Icon(Icons.chat, color: Colors.white),
-                    ),
-                    title: Text(
-                      conversation['title'] ?? 'Untitled Conversation',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: Text(
-                      '${conversation['message_count'] ?? 0} messages • ${conversation['created_at'] ?? 'Unknown time'}',
-                    ),
-                    trailing: const Icon(Icons.arrow_forward_ios),
-                    onTap: () => _viewConversation(
-                      conversation['id'] ?? '',
-                      conversation['title'] ?? 'Untitled',
-                    ),
+          : Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF8F0),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: const [
+                  BoxShadow(
+                    blurRadius: 10,
+                    color: Colors.black12,
+                    offset: Offset(0, 4),
                   ),
-                );
-              },
+                ],
+              ),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                itemCount: _conversations.length,
+                itemBuilder: (context, index) {
+                  final conversation = _conversations[index];
+                  final messageCount = _messageCount(conversation);
+                  final messageLabel = messageCount == 1
+                      ? 'message'
+                      : 'messages';
+                  final prettyTimestamp = _formatHistoryTimestamp(
+                    conversation['created_at'],
+                  );
+                  return Card(
+                    color: Colors.white,
+                    elevation: 1,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: const BorderSide(
+                        color: Color(0xFFE8D3B9),
+                        width: 1,
+                      ),
+                    ),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: const Color(0xFFC67C4E),
+                        child: const Icon(Icons.forum, color: Colors.white),
+                      ),
+                      title: Text(
+                        conversation['title'] ?? 'Untitled Conversation',
+                        style: const TextStyle(
+                          color: Color(0xFF3C3C3C),
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false,
+                      ),
+                      subtitle: Text(
+                        '$messageCount $messageLabel • $prettyTimestamp',
+                        style: const TextStyle(color: Color(0xFF8B6B5F)),
+                      ),
+                      trailing: const Icon(
+                        Icons.arrow_forward_ios,
+                        color: Color(0xFFC67C4E),
+                        size: 16,
+                      ),
+                      onTap: () => _viewConversation(
+                        conversation['id'] ?? '',
+                        conversation['title'] ?? 'Untitled',
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
     );
   }
@@ -196,11 +324,11 @@ class _ConversationDetailScreenState extends State<ConversationDetailScreen> {
 
   Color _getSpeakerColor(String speaker) {
     final colors = [
-      Colors.blue.shade700,
-      Colors.green.shade700,
-      Colors.purple.shade700,
-      Colors.orange.shade700,
-      Colors.teal.shade700,
+      const Color(0xFF7A4419), // Rich Brown
+      const Color(0xFF755C1B), // Darker Brown
+      const Color(0xFFD7BE82), // Warm Gold/Tan
+      const Color(0xFF515A47), // Muted Sage Green
+      const Color(0xFF400406), // Deep Maroon
     ];
 
     final hash = speaker.hashCode;
@@ -222,27 +350,12 @@ class _ConversationDetailScreenState extends State<ConversationDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFD7BE82),  // Warm gold background
+      backgroundColor: const Color(0xFFD7BE82), // Warm gold background
       appBar: AppBar(
-        backgroundColor: const Color(0xFF515A47),  // Sage green header
+        backgroundColor: const Color(0xFF515A47), // Sage green header
         elevation: 0,
-        title: Text(
-          widget.title,
-          style: const TextStyle(color: Colors.white),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: () {
-              // TODO: Implement sharing functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Share functionality coming soon!'),
-                ),
-              );
-            },
-          ),
-        ],
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text(widget.title, style: const TextStyle(color: Colors.white)),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -273,71 +386,72 @@ class _ConversationDetailScreenState extends State<ConversationDetailScreen> {
                 style: TextStyle(fontSize: 16, color: Colors.white70),
               ),
             )
-          : ListView.builder(
+          : Container(
+              margin: const EdgeInsets.all(16),
               padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final message = _messages[index];
-                final speakerName = _displaySpeaker(message);
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color.fromARGB(255, 60, 120, 88),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border(
-                      left: BorderSide(
-                        color: _getSpeakerColor(speakerName),
-                        width: 4,
-                      ),
-                    ),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF8F0),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: const [
+                  BoxShadow(
+                    blurRadius: 10,
+                    color: Colors.black12,
+                    offset: Offset(0, 4),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _getSpeakerColor(speakerName),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              speakerName,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            "${message.createdAt.hour.toString().padLeft(2, '0')}:${message.createdAt.minute.toString().padLeft(2, '0')}",
-                            style: const TextStyle(
-                              color: Colors.white60,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        message.text,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          height: 1.4,
+                ],
+              ),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                itemCount: _messages.length,
+                itemBuilder: (context, index) {
+                  final message = _messages[index];
+                  final speakerName = _displaySpeaker(message);
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFDAB9).withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border(
+                        left: BorderSide(
+                          color: _getSpeakerColor(speakerName),
+                          width: 4,
                         ),
                       ),
-                    ],
-                  ),
-                );
-              },
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          speakerName,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: _getSpeakerColor(speakerName),
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          message.text,
+                          style: const TextStyle(
+                            color: Color(0xFF3C3C3C),
+                            fontSize: 16,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "${message.createdAt.hour.toString().padLeft(2, '0')}:${message.createdAt.minute.toString().padLeft(2, '0')}",
+                          style: const TextStyle(
+                            color: Color(0xFFC67C4E),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
     );
   }
